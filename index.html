@@ -1,2241 +1,1487 @@
+
 <!DOCTYPE html>
-<html lang="zh-Hans">
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>僵尸生存：僵尸末日生存 - 终极魔王版</title>
-  <style>
-    :root {
-      --bg: #0c1117;
-      --panel: rgba(12, 17, 23, 0.86);
-      --line: rgba(255,255,255,0.18);
-      --gold: #f6c453;
-      --green: #58b368;
-      --red: #e45d5d;
-      --text: #f4f0dc;
-    }
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      background: radial-gradient(circle at top, #213042, #090c10 65%);
-      color: var(--text);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-      overflow: hidden;
-    }
-    .wrap {
-      height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 12px;
-      box-sizing: border-box;
-    }
-    canvas {
-      width: min(100vw - 24px, 1100px);
-      max-height: calc(100vh - 24px);
-      aspect-ratio: 1000 / 620;
-      border: 4px solid #2c2014;
-      border-radius: 14px;
-      background: #111;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(255,255,255,0.08);
-      image-rendering: pixelated;
-      cursor: crosshair;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>戰國大亨</title>
+<style>
+  :root{
+    --panel: rgba(15, 22, 38, 0.92);
+    --line: rgba(255,255,255,.18);
+  }
+  *{box-sizing:border-box; user-select:none;}
+  body{
+    margin:0;
+    overflow:hidden;
+    background:#214126;
+    font-family:"Microsoft JhengHei", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color:white;
+  }
+  #gameWrap{position:relative; width:100vw; height:100vh; overflow:hidden;}
+  canvas{display:block; width:100vw; height:100vh; background:linear-gradient(#2f6b35,#214126 55%,#263e78);}
+  .screen{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at center, rgba(79,104,161,.42), rgba(8,24,35,.82));
+    z-index:10;
+  }
+  .menuBox{
+    width:min(760px,92vw);
+    padding:28px;
+    border:2px solid rgba(255,255,255,.2);
+    border-radius:24px;
+    background:rgba(10,17,31,.88);
+    box-shadow:0 18px 60px rgba(0,0,0,.45);
+    text-align:center;
+  }
+  h1{margin:0 0 8px; font-size:54px; letter-spacing:8px; text-shadow:0 4px 0 rgba(0,0,0,.3);}
+  .sub{opacity:.82; margin-bottom:22px; font-size:18px;}
+  .colorGrid{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:16px;}
+  @media (max-width:760px){.colorGrid{grid-template-columns:repeat(2,1fr);} .colorBtn{height:86px;font-size:18px;}}
+  .colorBtn{
+    border:0; border-radius:18px; height:110px;
+    color:white; font-weight:900; font-size:22px;
+    cursor:pointer; box-shadow:inset 0 -10px 0 rgba(0,0,0,.22), 0 10px 22px rgba(0,0,0,.25);
+    transition:.13s transform, .13s filter;
+  }
+  .colorBtn:hover{transform:translateY(-3px) scale(1.02); filter:saturate(1.25) brightness(1.08);}
+  .hud{
+    position:absolute; left:12px; top:10px; z-index:3;
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    pointer-events:none;
+  }
+  .pill{
+    background:rgba(0,0,0,.52); border:1px solid var(--line);
+    border-radius:999px; padding:8px 12px; font-weight:800;
+    text-shadow:0 1px 2px rgba(0,0,0,.7);
+  }
+  .smallButtons{position:absolute; right:14px; top:12px; z-index:4; display:flex; gap:8px;}
+  button.ui{
+    background:rgba(0,0,0,.58); color:white; border:1px solid var(--line); border-radius:12px;
+    padding:9px 12px; font-weight:900; cursor:pointer;
+    box-shadow:0 6px 16px rgba(0,0,0,.22);
+  }
+  button.ui:hover{filter:brightness(1.18);}
+  #shopToggle{
+    position:absolute; right:18px; bottom:18px; z-index:5;
+    width:86px; height:86px; border-radius:24px;
+    border:2px solid rgba(255,255,255,.25);
+    background:linear-gradient(#f7c65a,#b36b14);
+    color:#271604; font-size:18px; font-weight:1000; cursor:pointer;
+    box-shadow:0 10px 28px rgba(0,0,0,.4), inset 0 -9px 0 rgba(0,0,0,.18);
+  }
+  #shopPanel{
+    display:none;
+    position:absolute; right:18px; bottom:116px; z-index:5;
+    width:min(420px, calc(100vw - 36px)); max-height:70vh; overflow:auto;
+    border:1px solid var(--line); border-radius:20px;
+    padding:14px; background:var(--panel); box-shadow:0 18px 44px rgba(0,0,0,.42);
+  }
+  #shopPanel.open{display:block;}
+  .panelTitle{font-size:22px; font-weight:1000; margin:0 0 10px; display:flex; align-items:center; justify-content:space-between;}
+  .section{border-top:1px solid var(--line); padding-top:10px; margin-top:10px;}
+  .btnGrid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .shopBtn{
+    border:0; border-radius:14px; padding:11px 9px; min-height:54px;
+    background:#27334f; color:white; font-weight:900; cursor:pointer; text-align:left;
+    box-shadow:inset 0 -5px 0 rgba(0,0,0,.2);
+  }
+  .shopBtn:hover{filter:brightness(1.15);}
+  .shopBtn:disabled{opacity:.42; cursor:not-allowed; filter:grayscale(.4);}
+  .shopBtn b{display:block; font-size:15px; margin-bottom:2px;}
+  .shopBtn span{font-size:12px; opacity:.78;}
+  .targetBtn.active, .modeBtn.active{outline:3px solid #fff; filter:brightness(1.22);}
+  #message{
+    position:absolute; left:50%; top:64px; transform:translateX(-50%);
+    background:rgba(0,0,0,.62); border:1px solid var(--line); border-radius:999px;
+    padding:8px 16px; font-weight:900; z-index:4; opacity:0; transition:.25s opacity;
+    pointer-events:none; white-space:nowrap;
+  }
+  #message.show{opacity:1;}
+  #helpBox{
+    display:none; position:absolute; right:14px; top:62px; z-index:6;
+    width:min(520px, calc(100vw - 28px)); padding:16px;
+    border-radius:18px; border:1px solid var(--line); background:var(--panel);
+    line-height:1.7; box-shadow:0 18px 44px rgba(0,0,0,.35);
+  }
+  #helpBox.open{display:block;}
+  #gameOver{
+    display:none; z-index:20; text-align:center;
+  }
+  #gameOver .menuBox{max-width:620px;}
+  .restart{
+    margin-top:18px; border:0; border-radius:14px; padding:14px 24px; font-size:18px; font-weight:900;
+    color:#171717; background:#ffd86d; cursor:pointer;
+  }
+  @media (max-width:700px){
+    h1{font-size:38px; letter-spacing:4px;}
+    .colorGrid{grid-template-columns:1fr 1fr;}
+    .colorBtn{height:82px;}
+    .pill{font-size:12px; padding:7px 9px;}
+  }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <canvas id="game" width="1000" height="620" aria-label="Zombie Survival Game"></canvas>
+<div id="gameWrap">
+  <canvas id="game"></canvas>
+
+  <div id="startScreen" class="screen" style="display:flex">
+    <div class="menuBox">
+      <h1>戰國大亨</h1>
+      <div class="sub">先選一個戰國顏色。你和 AI 都是 1000 金幣開局；這版是 10 個不同顏色國家混戰，快速賺錢最高到每秒 1000，升級最多 100 次，還新增坦克。</div>
+      <div class="colorGrid">
+        <button class="colorBtn" style="background:#2d8cff" data-team="blue">藍色戰國</button>
+        <button class="colorBtn" style="background:#e64545" data-team="red">紅色戰國</button>
+        <button class="colorBtn" style="background:#35b85f" data-team="green">綠色戰國</button>
+        <button class="colorBtn" style="background:#d8b22e;color:#241b00" data-team="yellow">黃色戰國</button>
+        <button class="colorBtn" style="background:#8d5cff" data-team="purple">紫色戰國</button>
+        <button class="colorBtn" style="background:#ff8b2d" data-team="orange">橘色戰國</button>
+        <button class="colorBtn" style="background:#26c9d4;color:#05292c" data-team="cyan">青色戰國</button>
+        <button class="colorBtn" style="background:#ff70b8" data-team="pink">粉色戰國</button>
+        <button class="colorBtn" style="background:#20242d" data-team="black">黑色戰國</button>
+        <button class="colorBtn" style="background:#f2f2e6;color:#222" data-team="white">白色戰國</button>
+      </div>
+    </div>
   </div>
+
+  <div class="hud" id="hud"></div>
+  <div class="smallButtons">
+    <button class="ui" id="pauseBtn">暫停</button>
+    <button class="ui" id="helpBtn">說明</button>
+  </div>
+  <div id="helpBox">
+    <b>玩法</b><br>
+    右下角打開商店。選擇攻擊目標，再叫出士兵。<br>
+    普通攻擊手：100 金幣。弓箭手：50 金幣。馬騎士要先 500 解鎖，再 500 召喚。你和 AI 開局每秒收入都是 100 金幣。<br>
+    快速賺錢：每次花 100 金幣買一次，每升一次就讓每秒收入多 100，最高只能到每秒 1000。玩家和 AI 都可以買。<br>
+    防守模式會待在塔附近；攻擊模式會往你選的戰國前進。士兵看到敵人會自己打。<br>
+    中間圓圈是加大的戰鬥場，現在有 10 個不同顏色國家一起打仗。AI 也會每秒 +100、買兵、升級、進攻和防守。<br>
+    攻擊模式會優先往你指定的國家前進，不會一直卡在戰鬥場。盾牌護衛可以格擋一半傷害，並用盾牌衝撞敵人造成 50 傷害。坦克 $1500，血量 1000，打一下 250，範圍攻擊很大。
+  </div>
+
+  <div id="message"></div>
+
+  <button id="shopToggle">商店<br>🪙</button>
+  <div id="shopPanel">
+    <div class="panelTitle">戰國商店 <button class="ui" id="closeShop">關閉</button></div>
+    <div class="section">
+      <b>控制</b>
+      <div class="btnGrid" id="modeButtons" style="margin-top:8px"></div>
+    </div>
+    <div class="section">
+      <b>選擇攻擊哪一隊</b>
+      <div class="btnGrid" id="targetButtons" style="margin-top:8px"></div>
+    </div>
+    <div class="section">
+      <b>叫士兵</b>
+      <div class="btnGrid" style="margin-top:8px">
+        <button class="shopBtn" id="buyNormal"><b>普通攻擊手 $100</b><span>血量 100，拿劍近戰</span></button>
+        <button class="shopBtn" id="buyArcher"><b>弓箭手 $50</b><span>血量 100，遠距離攻擊</span></button>
+        <button class="shopBtn" id="unlockCavalry"><b>買下馬騎士 $500</b><span>先解鎖，以後才能召喚</span></button>
+        <button class="shopBtn" id="buyCavalry"><b>馬騎士 $500</b><span>血量 500，騎馬衝刺戳人</span></button>
+        <button class="shopBtn" id="unlockSuperArcher"><b>解鎖三重弓箭手 $800</b><span>一次射出三發箭</span></button>
+        <button class="shopBtn" id="buySuperArcher"><b>三重弓箭手 $300</b><span>血量 500，一次等於三發箭</span></button>
+        <button class="shopBtn" id="buyShield"><b>盾牌護衛 $500</b><span>格擋一半傷害，盾擊 50</span></button>
+        <button class="shopBtn" id="buyGiant"><b>巨人 $1000</b><span>走路很快，打一下打掉 100 血</span></button>
+        <button class="shopBtn" id="buyTank"><b>坦克 $1500</b><span>血量 1000，打一下 250，大範圍攻擊</span></button>
+        <button class="shopBtn" id="buyQuickMoney"><b>快速賺錢 $100</b><span>每買一次，每秒收入 +100，最高 +1000/秒</span></button>
+        <button class="shopBtn" id="upgradeArmy"><b>全軍升級 $400</b><span>只增加血量和攻擊力，最多 100 次</span></button>
+        <button class="shopBtn" id="repairTower"><b>修理塔 $250</b><span>回復 400 塔血</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameOver" class="screen">
+    <div class="menuBox">
+      <h1 id="overTitle">遊戲結束</h1>
+      <div class="sub" id="overText"></div>
+      <div class="sub" id="restartCountdown" style="margin-top:10px"></div>
+      <button class="restart" id="restartSameBtn">再打一局</button>
+      <button class="restart" id="chooseAgainBtn" style="background:#ffffff;margin-left:8px">重新選顏色</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (() => {
-  'use strict';
-
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width;
-  const H = canvas.height;
+  const hud = document.getElementById('hud');
+  const startScreen = document.getElementById('startScreen');
+  const shopPanel = document.getElementById('shopPanel');
+  const msgEl = document.getElementById('message');
+  const helpBox = document.getElementById('helpBox');
 
-  const STATE = {
-    MENU: 'menu',
-    INTRO: 'intro',
-    PLAY: 'play',
-    GAME_OVER: 'gameOver',
-    WIN: 'win'
+  const COLORS = {
+    blue:   {name:'藍色', hex:'#2d8cff', dark:'#0e4b98', aiPower:1},
+    red:    {name:'紅色', hex:'#e64545', dark:'#8f1d1d', aiPower:1},
+    green:  {name:'綠色', hex:'#35b85f', dark:'#176a35', aiPower:1},
+    yellow: {name:'黃色', hex:'#d8b22e', dark:'#806711', aiPower:1},
+    purple: {name:'紫色', hex:'#8d5cff', dark:'#4f2cad', aiPower:1},
+    orange: {name:'橘色', hex:'#ff8b2d', dark:'#9b4b10', aiPower:1},
+    cyan:   {name:'青色', hex:'#26c9d4', dark:'#0b737b', aiPower:1},
+    pink:   {name:'粉色', hex:'#ff70b8', dark:'#a02f6a', aiPower:1},
+    black:  {name:'黑色', hex:'#20242d', dark:'#0c0f16', aiPower:1},
+    white:  {name:'白色', hex:'#f2f2e6', dark:'#a8a89a', aiPower:1}
   };
-
-  const game = {
-    state: STATE.MENU,
-    time: 0,
-    last: performance.now(),
-    introTime: 0,
-    day: 1,
-    phase: 'night',
-    phaseTimer: 60,
-    waveNumber: 0,
-    money: 300,
-    message: '点击开始，守住城堡。',
-    messageTimer: 0,
-    selectedPlot: null,
-    selectedTower: null,
-    mouse: { x: 0, y: 0 },
-    castle: { x: 54, y: 184, w: 132, h: 280, hp: 1000, maxHp: 1000 },
-    wave: null,
-    zombies: [],
-    towers: [],
-    guards: [],
-    bullets: [],
-    floatTexts: [],
-    particles: [],
-    bossAttacks: [],
-    bossSpawnedThisNight: false,
-    bossSpawnTimer: 0,
-    plots: [],
-    uiButtons: [],
-    upgradeButtons: []
+  const TEAM_ORDER = ['blue','red','green','yellow','purple','orange','cyan','pink','black','white'];
+  const TYPE = {
+    normal: {label:'普通攻擊手', hp:100, speed:52, range:24, damage:18, cooldown:.75, cost:100, kind:'melee'},
+    archer: {label:'弓箭手', hp:100, speed:42, range:185, damage:15, cooldown:1.15, cost:50, kind:'ranged'},
+    cavalry:{label:'馬騎士', hp:500, speed:94, range:30, damage:42, cooldown:.9, cost:500, kind:'melee'},
+    superArcher:{label:'三重弓箭手', hp:500, speed:38, range:230, damage:16, cooldown:1.0, cost:300, kind:'ranged3'},
+    shield:{label:'盾牌護衛', hp:500, speed:46, range:30, damage:50, cooldown:1.05, cost:500, kind:'melee', block:.5},
+    giant:{label:'巨人', hp:1000, speed:88, range:38, damage:100, cooldown:1.0, cost:1000, kind:'melee'},
+    tank:{label:'坦克', hp:1000, speed:34, range:76, damage:250, cooldown:1.55, cost:1500, kind:'aoe', aoe:112}
   };
+  const QUICK_MONEY_COST = 100;
+  const INCOME_START = 100;
+  const INCOME_UPGRADE = 100;
+  const MAX_INCOME = 1000;
+  const MAX_QUICK_MONEY_LEVEL = Math.floor((MAX_INCOME - INCOME_START) / INCOME_UPGRADE);
+  const UPGRADE_COST = 400;
+  const MAX_UPGRADE_COUNT = 100;
+  const MAX_LEVEL = MAX_UPGRADE_COUNT + 1;
+  const ARENA = {x:500,y:325,r:128};
+  const SIEGE_DAMAGE = 0;
+  const SIEGE_AOE = 0; // 保留安全值，玩家要求不使用攻城火球
 
-  const rules = {
-    nightDuration: 60,
-    buildDuration: 0,
-    waveSize: 5,
-    waveBreak: 10,
-    unlockGrassCost: 20,
-    towerCost: 100,
-    towerPaidUpgradeCost: 500,
-    towerPaidUpgradeMax: 4,
-    guardCost: 50,
-    zombieHp: 100,
-    zombieHpGrowthPerDay: 0.30,
-    reflectZombieHp: 500,
-    zombieDamage: 10,
-    zombieCastleDamageMultiplier: 5,
-    guardHp: 120,
-    guardDamage: 20,
-    guardAggroRange: 320,
-    towerHp: 100,
-    towerDamage: 1,
-    towerFireRate: 0.08,
-    towerRange: 185,
-    towerKillsForUpgrade: 10,
-    towerMaxLevel: 4,
-    reward: 10,
-    ultimateBossHp: 5000,
-    ultimateBossSpeed: 9,
-    ultimateBossAttackInterval: 60,
-    ultimateBossAttackRadius: 95,
-    ultimateBossAttackDamage: 75,
-    ultimateBossReward: 200
-  };
+  let W = 1000, H = 650, scale = 1;
+  let running = false, paused = false, gameEnded = false;
+  let playerTeam = null;
+  let selectedTarget = 'red';
+  let playerMode = 'attack';
+  let cameraShake = 0;
+  let lastTime = 0;
+  let units = [];
+  let projectiles = [];
+  let wildMonsters = [];
+  let particles = [];
+  let floatingTexts = [];
+  let wildSpawnId = 1;
+  let wildSpawnTimer = 0;
+  let kingdoms = {};
+  let spawnId = 1;
+  let elapsed = 0;
+  let lastSecond = 0;
+  let currentRunId = 0;
+  let restartTimer = null;
+  let restartCountdownLeft = 0;
+  let defeatedByTeam = null;
 
-  const path = [
-    { x: 964, y: 340 },
-    { x: 790, y: 340 },
-    { x: 746, y: 250 },
-    { x: 575, y: 250 },
-    { x: 535, y: 392 },
-    { x: 375, y: 392 },
-    { x: 248, y: 330 },
-    { x: 178, y: 330 }
-  ];
-
-  const pathData = buildPathData(path);
-
-  function buildPathData(points) {
-    const segments = [];
-    let total = 0;
-    for (let i = 0; i < points.length - 1; i++) {
-      const a = points[i];
-      const b = points[i + 1];
-      const len = dist(a.x, a.y, b.x, b.y);
-      segments.push({ a, b, len, start: total, end: total + len });
-      total += len;
-    }
-    return { segments, total };
+  function resize(){
+    const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    layoutBases();
   }
+  window.addEventListener('resize', resize);
 
-  function getPointOnPath(progress) {
-    const p = clamp(progress, 0, pathData.total);
-    for (const s of pathData.segments) {
-      if (p <= s.end) {
-        const t = (p - s.start) / s.len;
-        return {
-          x: lerp(s.a.x, s.b.x, t),
-          y: lerp(s.a.y, s.b.y, t),
-          angle: Math.atan2(s.b.y - s.a.y, s.b.x - s.a.x)
-        };
-      }
-    }
-    const last = path[path.length - 1];
-    return { x: last.x, y: last.y, angle: Math.PI };
-  }
-
-  function resetGame() {
-    game.state = STATE.PLAY;
-    game.time = 0;
-    game.day = 1;
-    game.phase = 'night';
-    game.phaseTimer = rules.nightDuration;
-    game.waveNumber = 0;
-    game.money = 300;
-    game.message = '第一天黑夜：每波固定 5 只普通方块僵尸，普通僵尸 100 HP。第 2 天跑步者加入，第 3 天死神加入，第 4 天反效果僵尸加入，第 5 天开始每 5 天出现终极魔王。';
-    game.messageTimer = 7;
-    game.castle.hp = game.castle.maxHp;
-    game.zombies.length = 0;
-    game.towers.length = 0;
-    game.guards.length = 0;
-    game.bullets.length = 0;
-    game.floatTexts.length = 0;
-    game.particles.length = 0;
-    game.bossAttacks.length = 0;
-    game.bossSpawnedThisNight = false;
-    game.bossSpawnTimer = 0;
-    game.selectedPlot = null;
-    game.selectedTower = null;
-    game.plots = [
-      { id: 1, x: 690, y: 295, r: 36, unlocked: true, tower: null, label: '赠送地块' },
-      { id: 2, x: 618, y: 178, r: 36, unlocked: false, tower: null },
-      { id: 3, x: 468, y: 300, r: 36, unlocked: false, tower: null },
-      { id: 4, x: 430, y: 475, r: 36, unlocked: false, tower: null },
-      { id: 5, x: 725, y: 424, r: 36, unlocked: false, tower: null },
-      { id: 6, x: 865, y: 250, r: 36, unlocked: false, tower: null },
-      { id: 7, x: 295, y: 235, r: 36, unlocked: false, tower: null },
-      { id: 8, x: 272, y: 430, r: 36, unlocked: false, tower: null }
-    ];
-    startNight(1, true);
-  }
-
-  function startNight(day, keepMessage = false) {
-    game.day = day;
-    game.phase = 'night';
-    game.phaseTimer = rules.nightDuration;
-    game.waveNumber = 0;
-    game.wave = isUltimateBossDay(day) ? null : createWave(2.2);
-    game.bossAttacks.length = 0;
-    game.bossSpawnedThisNight = false;
-    game.bossSpawnTimer = isUltimateBossDay(day) ? 4.0 : 0;
-    const todayHp = zombieHpForDay(day);
-    if (!keepMessage) {
-      if (day === 1) {
-        game.message = '第 1 天黑夜开始：普通僵尸每波 5 只，HP ' + todayHp + '。打完一波后 10 秒会再来一波。';
-      } else if (day === 2) {
-        game.message = '第 2 天黑夜开始：跑步者加入！今天普通僵尸 HP ' + todayHp + '，跑步者会混在每波里面。';
-      } else if (day === 3) {
-        game.message = '第 3 天黑夜开始：死神加入战场！死神 1000 HP，每 3 秒往前短距离传送。';
-      } else if (day === 4) {
-        game.message = '第 4 天黑夜开始：反效果僵尸加入！它有 500 HP，而且雷射／闪电炮台打不到它。';
-      } else if (isUltimateBossDay(day)) {
-        game.message = '第 ' + day + ' 天黑夜开始：终极魔王即将出现！魔王战不会生产普通僵尸，场上僵尸会被清空。';
-      } else {
-        game.message = '第 ' + day + ' 天黑夜开始：僵尸血量每天增加 30%，今天普通僵尸 HP ' + todayHp + '。';
-      }
-      game.messageTimer = 7;
-    }
-    showFloat('第 ' + day + ' 天黑夜', 500, 165, isUltimateBossDay(day) ? '#ff7070' : (day >= 3 ? '#d9b7ff' : '#b5d4ff'));
-  }
-
-  function startBuildPhase() {
-    // 现在没有白天建造期：黑夜 1 分钟结束后直接进入下一天黑夜。
-    startNight(game.day + 1);
-  }
-
-  function createWave(firstDelay) {
-    return {
-      total: rules.waveSize,
-      spawned: 0,
-      spawnTimer: firstDelay,
-      nextGap: 2.15,
-      breakTimer: 0,
-      warningDuration: 2.05,
-      finished: false
-    };
-  }
-
-  function zombieHpForDay(day) {
-    const safeDay = Math.max(1, day || 1);
-    return Math.round(rules.zombieHp * Math.pow(1 + rules.zombieHpGrowthPerDay, safeDay - 1));
-  }
-
-  function isUltimateBossDay(day = game.day) {
-    return day > 0 && day % 5 === 0;
-  }
-
-  function hasUltimateBossAlive() {
-    return game.zombies.some(z => z.alive && z.colorMode === 'ultimate');
-  }
-
-  function clearNormalZombiesForBoss() {
-    let removed = 0;
-    for (const z of game.zombies) {
-      if (z.alive && z.colorMode !== 'ultimate') {
-        z.alive = false;
-        removed++;
-        for (let i = 0; i < 8; i++) addParticle(z.x + rand(-15, 15), z.y + rand(-60, -10), rand(-25, 25), rand(-35, 12), '#dff7ff', 0.45, 3);
-      }
-    }
-    game.zombies = game.zombies.filter(z => z.alive);
-    game.bullets = game.bullets.filter(b => b.target && b.target.alive);
-    game.wave = null;
-    if (removed > 0) showFloat('魔王威压：场上僵尸全部消失', 500, 150, '#ffb0b0');
-  }
-
-  function startIntro() {
-    game.state = STATE.INTRO;
-    game.introTime = 0;
-    game.message = '城墙开始晃动……';
-    game.messageTimer = 0;
-  }
-
-  function update(dt) {
-    game.time += dt;
-
-    if (game.messageTimer > 0) {
-      game.messageTimer -= dt;
-      if (game.messageTimer <= 0) game.message = '';
-    }
-
-    if (game.state === STATE.INTRO) {
-      updateIntro(dt);
-    } else if (game.state === STATE.PLAY) {
-      updatePlay(dt);
-    }
-
-    updateParticles(dt);
-    updateFloatTexts(dt);
-  }
-
-  function updateIntro(dt) {
-    game.introTime += dt;
-    if (game.introTime > 5.2) {
-      resetGame();
-    }
-  }
-
-  function updatePlay(dt) {
-    updateDayCycle(dt);
-    updateBossSpawning(dt);
-    spawnWave(dt);
-    updateZombies(dt);
-    updateGuards(dt);
-    updateTowers(dt);
-    updateBullets(dt);
-    updateBossAttacks(dt);
-
-    if (game.castle.hp <= 0) {
-      game.castle.hp = 0;
-      game.state = STATE.GAME_OVER;
-      game.message = '城堡倒塌了，游戏结束。';
-    }
-  }
-
-  function updateDayCycle(dt) {
-    if (game.phase === 'night') {
-      // 终极魔王在场时暂停黑夜倒计时，必须先打倒魔王，才会进入下一天。
-      if (hasUltimateBossAlive()) return;
-      game.phaseTimer -= dt;
-      if (game.phaseTimer <= 0) startNight(game.day + 1);
-    }
-  }
-
-  function updateBossSpawning(dt) {
-    if (game.state !== STATE.PLAY || game.phase !== 'night') return;
-    if (game.bossSpawnedThisNight || !isUltimateBossDay(game.day) || hasUltimateBossAlive()) return;
-    game.bossSpawnTimer -= dt;
-    if (game.bossSpawnTimer <= 0) {
-      game.bossSpawnedThisNight = true;
-      spawnUltimateBoss();
-    }
-  }
-
-  function spawnWave(dt) {
-    if (game.phase !== 'night') return;
-    // Boss 日是纯魔王战；魔王出现或还活着时，不会再生产普通僵尸、跑步者或死神。
-    if (isUltimateBossDay(game.day) || hasUltimateBossAlive()) return;
-    const wave = game.wave;
-    if (!wave) return;
-
-    if (wave.finished) {
-      wave.breakTimer -= dt;
-      if (wave.breakTimer <= 0) {
-        game.waveNumber++;
-        game.wave = createWave(0.35);
-      }
-      return;
-    }
-
-    wave.spawnTimer -= dt;
-    if (wave.spawnTimer <= 0 && wave.spawned < wave.total) {
-      wave.spawned++;
-      spawnZombieForCurrentDay(wave.spawned);
-      wave.spawnTimer = wave.nextGap;
-      if (wave.spawned === 1) {
-        const label = '第 ' + game.day + ' 天 · 第 ' + (game.waveNumber + 1) + ' 波：5 只僵尸！';
-        showFloat(label, 805, 286, '#e7f6d5');
-      }
-    }
-    if (wave.spawned >= wave.total) {
-      wave.finished = true;
-      wave.breakTimer = rules.waveBreak;
-      game.message = '这一波 5 只已经全部出现。' + rules.waveBreak + ' 秒后下一波会来，黑夜结束前不会停止。';
-      game.messageTimer = 3.5;
-    }
-  }
-
-  function spawnZombieForCurrentDay(indexInWave) {
-    const todayHp = zombieHpForDay(game.day);
-    if (game.day >= 3 && indexInWave === 5) {
-      spawnZombie({ type: '死神', hp: 1000, speed: 18, colorMode: 'reaper', teleportEvery: 3, teleportDistance: 58 });
-    } else if (game.day >= 4 && indexInWave === 3) {
-      spawnZombie({ type: '反效果僵尸', hp: rules.reflectZombieHp, speed: 22, colorMode: 'reflect', immuneElements: ['雷射', '闪电', '雷'] });
-    } else if (game.day >= 2 && (indexInWave === 2 || indexInWave === 4)) {
-      spawnZombie({ type: '跑步者', hp: todayHp, speed: 44, colorMode: 'fast' });
-    } else {
-      spawnZombie({ type: '普通僵尸', hp: todayHp, speed: 24, colorMode: 'normal' });
-    }
-  }
-
-  function spawnUltimateBoss() {
-    clearNormalZombiesForBoss();
-    spawnZombie({
-      type: '终极魔王',
-      hp: rules.ultimateBossHp,
-      speed: rules.ultimateBossSpeed,
-      colorMode: 'ultimate',
-      bossAttackEvery: rules.ultimateBossAttackInterval,
-      bossAttackRadius: rules.ultimateBossAttackRadius,
-      bossAttackDamage: rules.ultimateBossAttackDamage,
-      reward: rules.ultimateBossReward
+  function layoutBases(){
+    // 十國版：所有國家沿著大地圖外圈排開，中間戰鬥場放大。
+    ARENA.x = W/2;
+    ARENA.y = H/2;
+    ARENA.r = Math.max(135, Math.min(W,H)*.235);
+    const cx = W/2, cy = H/2;
+    const rx = Math.max(ARENA.r + 170, W * .43);
+    const ry = Math.max(ARENA.r + 130, H * .39);
+    TEAM_ORDER.forEach((t, i) => {
+      const angle = -Math.PI/2 + i * Math.PI * 2 / TEAM_ORDER.length;
+      const x = clamp(cx + Math.cos(angle) * rx, 72, W - 72);
+      const y = clamp(cy + Math.sin(angle) * ry, 82, H - 82);
+      if(kingdoms[t]) kingdoms[t].base = {x,y};
     });
-    game.message = '终极魔王出现！场上其他僵尸全部消失，魔王还在的时候不会再生产僵尸。';
-    game.messageTimer = 6;
-    showFloat('终极魔王出现！', path[0].x - 20, path[0].y - 130, '#ff6b6b');
-    screenShake(5);
   }
 
-  function spawnZombie(opts = {}) {
-    const z = {
-      type: opts.type || '普通僵尸',
-      colorMode: opts.colorMode || 'normal',
-      progress: 0,
-      x: path[0].x,
-      y: path[0].y,
-      hp: opts.hp || rules.zombieHp,
-      maxHp: opts.hp || rules.zombieHp,
-      damage: rules.zombieDamage,
-      speed: opts.speed || 30,
-      materializeTimer: 0.62,
-      chargeTimer: 0,
-      runPhase: rand(0, Math.PI * 2),
-      attackCooldown: 0,
-      teleportTimer: opts.teleportEvery || 0,
-      teleportEvery: opts.teleportEvery || 0,
-      teleportDistance: opts.teleportDistance || 0,
-      bossAttackTimer: opts.bossAttackEvery || 0,
-      bossAttackEvery: opts.bossAttackEvery || 0,
-      bossAttackRadius: opts.bossAttackRadius || 0,
-      bossAttackDamage: opts.bossAttackDamage || 0,
-      reward: opts.reward || rules.reward,
-      immuneElements: opts.immuneElements || [],
-      targetGuard: null,
-      slowTimer: 0,
-      slowAmount: 0,
-      burnTimer: 0,
-      burnTick: 0,
-      alive: true,
-      hitByTowerId: null
+  function initGame(team){
+    playerTeam = team;
+    selectedTarget = TEAM_ORDER.find(t => t !== playerTeam) || 'red';
+    kingdoms = {};
+    TEAM_ORDER.forEach(t => {
+      kingdoms[t] = {
+        team:t,
+        // 玩家和所有 AI 國家開局金幣都一樣：1000。
+        gold:1000,
+        incomePerSecond:INCOME_START,
+        quickMoneyLevel:0,
+        quickMoneyCd:0,
+        towerHp:3000,
+        towerMax:3000,
+        level:1,
+        alive:true,
+        cavalryUnlocked:false,
+        superArcherUnlocked:false,
+        shieldUnlocked:false,
+        giantUnlocked:false,
+        tankUnlocked:true,
+        aiTimer: 2.0 + Math.random()*2.2,
+        aiThink: 0,
+        aiTarget: null,
+        aiMode:'attack',
+        upgradeTimer: 18 + Math.random()*8,
+        base:{x:0,y:0}
+      };
+    });
+    TEAM_ORDER.filter(t => t !== playerTeam).forEach(t => {
+      kingdoms[t].cavalryUnlocked = true;
+      kingdoms[t].superArcherUnlocked = true;
+      kingdoms[t].shieldUnlocked = true;
+      kingdoms[t].giantUnlocked = true;
+      kingdoms[t].tankUnlocked = true;
+    });
+    layoutBases();
+    units = [];
+    projectiles = [];
+    wildMonsters = [];
+    particles = [];
+    floatingTexts = [];
+    spawnId = 1;
+    wildSpawnId = 1;
+    wildSpawnTimer = 0;
+    elapsed = 0;
+    lastSecond = 0;
+    if(restartTimer){ clearInterval(restartTimer); restartTimer = null; }
+    restartCountdownLeft = 0;
+    defeatedByTeam = null;
+    running = true;
+    paused = false;
+    gameEnded = false;
+    currentRunId++;
+    startScreen.style.display = 'none';
+    document.getElementById('gameOver').style.display = 'none';
+    document.getElementById('pauseBtn').textContent = '暫停';
+    setupShopButtons();
+    message('新增坦克！快速賺錢最高每秒 $1000，升級最多 100 次！');
+    for(let i=0;i<2;i++) spawnUnit(playerTeam, 'normal', true);
+    TEAM_ORDER.filter(t=>t!==playerTeam).forEach(t=>{
+      spawnUnit(t, 'normal', false);
+      spawnUnit(t, 'archer', false);
+      spawnUnit(t, 'cavalry', false);
+      spawnUnit(t, 'superArcher', false);
+      spawnUnit(t, 'shield', false);
+    });
+    for(let i=0;i<5;i++) spawnWildMonster(true);
+    lastTime = performance.now();
+    const runId = currentRunId;
+    requestAnimationFrame(now => loop(now, runId));
+  }
+
+  document.querySelectorAll('.colorBtn').forEach(btn => {
+    btn.addEventListener('click', () => initGame(btn.dataset.team));
+  });
+
+  document.getElementById('restartSameBtn').onclick = () => {
+    if(playerTeam) initGame(playerTeam);
+  };
+  document.getElementById('chooseAgainBtn').onclick = () => {
+    if(restartTimer){ clearInterval(restartTimer); restartTimer = null; }
+    running = false;
+    gameEnded = false;
+    currentRunId++;
+    units = []; projectiles = []; wildMonsters = []; particles = []; floatingTexts = [];
+    shopPanel.classList.remove('open');
+    helpBox.classList.remove('open');
+    document.getElementById('gameOver').style.display = 'none';
+    startScreen.style.display = 'flex';
+    hud.innerHTML = '';
+  };
+
+  document.getElementById('shopToggle').onclick = () => shopPanel.classList.toggle('open');
+  document.getElementById('closeShop').onclick = () => shopPanel.classList.remove('open');
+  document.getElementById('helpBtn').onclick = () => helpBox.classList.toggle('open');
+  document.getElementById('pauseBtn').onclick = () => {
+    if(!running || gameEnded) return;
+    paused = !paused;
+    document.getElementById('pauseBtn').textContent = paused ? '繼續' : '暫停';
+    message(paused ? '已暫停' : '繼續戰鬥！');
+  };
+
+  function setupShopButtons(){
+    const targetBox = document.getElementById('targetButtons');
+    targetBox.innerHTML = '';
+    TEAM_ORDER.filter(t => t !== playerTeam).forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'shopBtn targetBtn';
+      b.style.background = COLORS[t].dark;
+      b.innerHTML = `<b>攻擊${COLORS[t].name}</b><span>士兵會往這一國進攻</span>`;
+      b.onclick = () => { selectedTarget = t; setupShopButtons(); message('目標改成：' + COLORS[t].name + '戰國'); };
+      if(selectedTarget === t) b.classList.add('active');
+      targetBox.appendChild(b);
+    });
+
+    const modeBox = document.getElementById('modeButtons');
+    modeBox.innerHTML = '';
+    [
+      {id:'attack', title:'攻擊模式', desc:'士兵會出城打人'},
+      {id:'defend', title:'防守模式', desc:'士兵待在塔附近'}
+    ].forEach(m => {
+      const b = document.createElement('button');
+      b.className = 'shopBtn modeBtn';
+      b.innerHTML = `<b>${m.title}</b><span>${m.desc}</span>`;
+      b.onclick = () => { playerMode = m.id; setupShopButtons(); message(m.title); };
+      if(playerMode === m.id) b.classList.add('active');
+      modeBox.appendChild(b);
+    });
+    updateShopButtons();
+  }
+
+  function getPlayer(){return kingdoms[playerTeam];}
+  function spend(cost){
+    const p = getPlayer();
+    if(p.gold < cost){message('金幣不夠！'); return false;}
+    p.gold -= cost;
+    return true;
+  }
+
+  function buyQuickMoneyFor(team, fromPlayer){
+    const k = kingdoms[team];
+    if(!k || !k.alive) return false;
+    const currentIncome = k.incomePerSecond || INCOME_START;
+    if(currentIncome >= MAX_INCOME || (k.quickMoneyLevel || 0) >= MAX_QUICK_MONEY_LEVEL){
+      k.incomePerSecond = MAX_INCOME;
+      k.quickMoneyLevel = MAX_QUICK_MONEY_LEVEL;
+      if(fromPlayer) message('快速賺錢已經到最高：每秒 $1000！');
+      updateShopButtons();
+      return false;
+    }
+    if(k.gold < QUICK_MONEY_COST){
+      if(fromPlayer) message('金幣不夠！快速賺錢要 $100。');
+      return false;
+    }
+    k.gold -= QUICK_MONEY_COST;
+    k.quickMoneyLevel = Math.min(MAX_QUICK_MONEY_LEVEL, (k.quickMoneyLevel || 0) + 1);
+    k.incomePerSecond = Math.min(MAX_INCOME, currentIncome + INCOME_UPGRADE);
+    floatingText(k.base.x, k.base.y-122, '+收入 $' + INCOME_UPGRADE + '/秒', '#ffd86d');
+    burst(k.base.x, k.base.y, '#ffd86d', 10);
+    if(fromPlayer){
+      message('快速賺錢升級！現在每秒收入 +$' + Math.floor(k.incomePerSecond) + '。');
+      updateShopButtons();
+    }
+    return true;
+  }
+  function updateShopButtons(){
+    if(!playerTeam || !kingdoms[playerTeam]) return;
+    const p = getPlayer();
+    const setDis = (id, dis) => document.getElementById(id).disabled = dis;
+    setDis('buyNormal', p.gold < TYPE.normal.cost);
+    setDis('buyArcher', p.gold < TYPE.archer.cost);
+    setDis('unlockCavalry', p.cavalryUnlocked || p.gold < 500);
+    document.getElementById('unlockCavalry').innerHTML = p.cavalryUnlocked ? '<b>馬騎士已買下</b><span>現在可以召喚馬騎士</span>' : '<b>買下馬騎士 $500</b><span>先解鎖，以後才能召喚</span>';
+    setDis('buyCavalry', !p.cavalryUnlocked || p.gold < TYPE.cavalry.cost);
+    setDis('unlockSuperArcher', p.superArcherUnlocked || p.gold < 800);
+    document.getElementById('unlockSuperArcher').innerHTML = p.superArcherUnlocked ? '<b>三重弓箭手已解鎖</b><span>一次射出三發箭</span>' : '<b>解鎖三重弓箭手 $800</b><span>一次射出三發箭</span>';
+    setDis('buySuperArcher', !p.superArcherUnlocked || p.gold < TYPE.superArcher.cost);
+    setDis('buyShield', p.gold < TYPE.shield.cost);
+    setDis('buyGiant', p.gold < TYPE.giant.cost);
+    setDis('buyTank', p.gold < TYPE.tank.cost);
+    const quickMaxed = (p.incomePerSecond || INCOME_START) >= MAX_INCOME || (p.quickMoneyLevel || 0) >= MAX_QUICK_MONEY_LEVEL;
+    setDis('buyQuickMoney', quickMaxed || p.gold < QUICK_MONEY_COST);
+    document.getElementById('buyQuickMoney').innerHTML = quickMaxed
+      ? '<b>快速賺錢已滿</b><span>最高每秒收入 +$' + MAX_INCOME + '</span>'
+      : '<b>快速賺錢 $100</b><span>現在每秒收入 +$' + Math.floor(p.incomePerSecond || INCOME_START) + '，再買 +100，最高 +1000</span>';
+    const upgradeCount = Math.max(0, (p.level || 1) - 1);
+    const upgradeMaxed = upgradeCount >= MAX_UPGRADE_COUNT || (p.level || 1) >= MAX_LEVEL;
+    setDis('upgradeArmy', upgradeMaxed || p.gold < UPGRADE_COST);
+    document.getElementById('upgradeArmy').innerHTML = upgradeMaxed
+      ? '<b>全軍升級已滿</b><span>已升級 100 次，只加血量和攻擊</span>'
+      : '<b>全軍升級 $' + UPGRADE_COST + '</b><span>已升級 ' + upgradeCount + '/100 次，只增加血量和攻擊力</span>';
+    setDis('repairTower', p.gold < 250 || p.towerHp >= p.towerMax);
+  }
+
+  document.getElementById('buyNormal').onclick = () => { if(spend(TYPE.normal.cost)) spawnUnit(playerTeam,'normal',true); };
+  document.getElementById('buyArcher').onclick = () => { if(spend(TYPE.archer.cost)) spawnUnit(playerTeam,'archer',true); };
+  document.getElementById('unlockCavalry').onclick = () => { const p=getPlayer(); if(!p.cavalryUnlocked && spend(500)){p.cavalryUnlocked=true; message('馬騎士買下成功！'); updateShopButtons();} };
+  document.getElementById('buyCavalry').onclick = () => { const p=getPlayer(); if(!p.cavalryUnlocked){message('要先買下馬騎士！'); return;} if(spend(TYPE.cavalry.cost)) spawnUnit(playerTeam,'cavalry',true); };
+  document.getElementById('unlockSuperArcher').onclick = () => { const p=getPlayer(); if(!p.superArcherUnlocked && spend(800)){p.superArcherUnlocked=true; message('三重弓箭手解鎖！'); updateShopButtons();} };
+  document.getElementById('buySuperArcher').onclick = () => { const p=getPlayer(); if(!p.superArcherUnlocked){message('要先解鎖三重弓箭手！'); return;} if(spend(TYPE.superArcher.cost)) spawnUnit(playerTeam,'superArcher',true); };
+  document.getElementById('buyShield').onclick = () => { if(spend(TYPE.shield.cost)) spawnUnit(playerTeam,'shield',true); };
+  document.getElementById('buyGiant').onclick = () => { if(spend(TYPE.giant.cost)) spawnUnit(playerTeam,'giant',true); };
+  document.getElementById('buyTank').onclick = () => { if(spend(TYPE.tank.cost)) spawnUnit(playerTeam,'tank',true); };
+  document.getElementById('buyQuickMoney').onclick = () => { buyQuickMoneyFor(playerTeam, true); };
+  document.getElementById('upgradeArmy').onclick = () => {
+    const p=getPlayer();
+    if((p.level || 1) >= MAX_LEVEL){ message('全軍升級已經滿 100 次！'); updateShopButtons(); return; }
+    if(spend(UPGRADE_COST)){
+      p.level = Math.min(MAX_LEVEL, (p.level || 1) + 1);
+      message('全軍升級到 Lv.' + p.level + '：只增加血量和攻擊力！');
+      flashAt(p.base.x,p.base.y,COLORS[playerTeam].hex);
+      updateShopButtons();
+    }
+  };
+  document.getElementById('repairTower').onclick = () => { const p=getPlayer(); if(spend(250)){p.towerHp = Math.min(p.towerMax, p.towerHp + 400); message('塔已修理'); floatingText(p.base.x, p.base.y-70, '+塔血', '#9ef59e'); } };
+
+  function spawnUnit(team, type, fromPlayer){
+    const k = kingdoms[team];
+    if(!k || !k.alive) return null;
+    const info = TYPE[type];
+    const angle = Math.random()*Math.PI*2;
+    const r = 38 + Math.random()*24;
+    const lvl = k.level;
+    const aiPower = team === playerTeam ? 1 : (COLORS[team].aiPower ?? 1);
+    const hp = Math.round(info.hp * (1 + (lvl-1)*0.18) * aiPower);
+    const u = {
+      id: spawnId++, team, type,
+      x:k.base.x + Math.cos(angle)*r,
+      y:k.base.y + Math.sin(angle)*r,
+      vx:0, vy:0,
+      hp, maxHp:hp,
+      speed: info.speed * (team === playerTeam ? 1 : Math.max(.82, aiPower)),
+      damage: Math.round(info.damage * (1 + (lvl-1)*0.10) * aiPower),
+      range: info.range,
+      cooldown: info.cooldown,
+      cd: Math.random()*.5,
+      targetId:null,
+      moveGoal:null,
+      born: elapsed,
+      killCredit: team,
+      playerOwned: team === playerTeam
     };
-    game.zombies.push(z);
-    for (let i = 0; i < 14; i++) {
-      addParticle(z.x + rand(-20, 20), z.y + rand(-75, -20), rand(-28, 28), rand(-45, 5), '#dff7ff', 0.52, 3);
-    }
-    showFloat('幽灵成形', z.x, z.y - 86, '#dff7ff');
+    units.push(u);
+    burst(k.base.x,k.base.y,COLORS[team].hex,8);
+    if(fromPlayer) updateShopButtons();
+    return u;
   }
 
-  function updateZombies(dt) {
-    for (const z of game.zombies) {
-      if (!z.alive) continue;
-
-      if (z.slowTimer > 0) z.slowTimer -= dt;
-      if (z.burnTimer > 0) {
-        z.burnTimer -= dt;
-        z.burnTick -= dt;
-        if (z.burnTick <= 0) {
-          z.burnTick = 0.5;
-          damageZombie(z, 1, null, '火');
-        }
-      }
-
-      z.attackCooldown -= dt;
-
-      // 刚出现时，先在幽灵圈圈里成形；成形后才沿着道路慢慢走。
-      if (z.materializeTimer > 0) {
-        z.materializeTimer -= dt;
-        continue;
-      }
-
-      updateBossSpecial(z, dt);
-
-      z.targetGuard = findGuardInMelee(z);
-
-      if (z.targetGuard) {
-        if (z.attackCooldown <= 0) {
-          z.attackCooldown = 1.0;
-          damageGuard(z.targetGuard, z.damage);
-          showFloat('-' + z.damage, z.targetGuard.x, z.targetGuard.y - 32, '#ff8b8b');
-          addSlash(z.targetGuard.x, z.targetGuard.y);
-        }
-        continue;
-      }
-
-      if (z.progress >= pathData.total - 2) {
-        if (z.attackCooldown <= 0) {
-          z.attackCooldown = 1.0;
-          const dmg = z.damage * rules.zombieCastleDamageMultiplier;
-          game.castle.hp -= dmg;
-          showFloat('城堡 -' + dmg, game.castle.x + 90, game.castle.y + 70, '#ff6b6b');
-          screenShake(5);
-          for (let i = 0; i < 12; i++) addParticle(game.castle.x + game.castle.w, z.y + rand(-30, 30), rand(20, 80), rand(-30, 30), '#b98b5d', 0.55, 4);
-        }
-        continue;
-      }
-
-      if (z.teleportEvery > 0) {
-        z.teleportTimer -= dt;
-        if (z.teleportTimer <= 0) {
-          z.teleportTimer = z.teleportEvery;
-          const before = z.progress;
-          z.progress = Math.min(pathData.total - 2, z.progress + z.teleportDistance);
-          const p2 = getPointOnPath(z.progress);
-          z.x = p2.x;
-          z.y = p2.y;
-          showFloat('死神传送', z.x, z.y - 82, '#d9b7ff');
-          for (let i = 0; i < 22; i++) addParticle(z.x, z.y - 35, rand(-48, 48), rand(-55, 32), '#b58cff', 0.75, 4);
-          if (z.progress > before) screenShake(2.5);
-        }
-      }
-
-      const slow = z.slowTimer > 0 ? z.slowAmount : 0;
-      if (z.chargeTimer > 0) z.chargeTimer -= dt;
-      z.progress += z.speed * (1 - slow) * dt;
-      const p = getPointOnPath(z.progress);
-      z.x = p.x;
-      z.y = p.y;
-    }
-
-    game.zombies = game.zombies.filter(z => z.alive);
+  function aliveEnemies(team){
+    return TEAM_ORDER.filter(t => t !== team && kingdoms[t].alive);
   }
 
-  function updateBossSpecial(z, dt) {
-    if (z.colorMode !== 'ultimate' || z.bossAttackEvery <= 0) return;
-    z.bossAttackTimer -= dt;
-    if (z.bossAttackTimer <= 0) {
-      z.bossAttackTimer = z.bossAttackEvery;
-      createBossTridentAttack(z);
+  function chooseAiTarget(team){
+    const enemies = aliveEnemies(team);
+    if(!enemies.length) return null;
+    enemies.sort((a,b) => kingdoms[a].towerHp - kingdoms[b].towerHp + (Math.random()-.5)*650);
+    return enemies[0];
+  }
+
+  function aiStep(k, dt){
+    if(!k.alive || k.team === playerTeam) return;
+
+    // AI 也會照自己的每秒收入加錢；快速賺錢升級後會越賺越快。
+    k.incomePerSecond = Math.min(MAX_INCOME, k.incomePerSecond || INCOME_START);
+    k.gold += dt * k.incomePerSecond;
+
+    // AI 也會買快速賺錢，但不會亂創新東西，只是把每秒收入變高。
+    k.quickMoneyCd = Math.max(0, (k.quickMoneyCd || 0) - dt);
+    if(k.quickMoneyCd <= 0 && k.gold >= QUICK_MONEY_COST && (k.incomePerSecond || INCOME_START) < MAX_INCOME && (k.quickMoneyLevel || 0) < MAX_QUICK_MONEY_LEVEL && Math.random() < .46){
+      k.quickMoneyCd = .75 + Math.random()*1.1;
+      buyQuickMoneyFor(k.team, false);
+    }
+
+    const ownUnits = units.filter(u => u.team === k.team);
+    const ownCount = ownUnits.length;
+    const enemiesNearBase = units.filter(u => u.team !== k.team && dist(u.x,u.y,k.base.x,k.base.y) < 250).length;
+    const strongCount = ownUnits.filter(u => u.type === 'cavalry' || u.type === 'superArcher' || u.type === 'shield' || u.type === 'giant' || u.type === 'tank').length;
+
+    // AI 會更像玩家：大部分時間主動出來進攻，只有塔快被打爆才會回防。
+    k.aiThink -= dt;
+    if(k.aiThink <= 0){
+      k.aiThink = .45 + Math.random()*0.65;
+      const underAttack = enemiesNearBase > 0;
+      const danger = (underAttack && enemiesNearBase > Math.max(5, ownCount * .55)) || k.towerHp < k.towerMax * .32;
+      const weakestTarget = chooseAiTarget(k.team);
+      k.aiMode = danger && Math.random() < .58 ? 'defend' : 'attack';
+      if(strongCount >= 2 || ownCount >= 5) k.aiMode = 'attack';
+      k.aiTarget = danger ? nearestEnemyTeamNear(k.team, k.base.x, k.base.y) : weakestTarget;
+    }
+
+    // AI 也會修塔，讓它能打更久、更強。
+    if(k.towerHp < k.towerMax * .62 && k.gold >= 250 && Math.random() < dt * 1.2){
+      k.gold -= 250;
+      k.towerHp = Math.min(k.towerMax, k.towerHp + 400);
+      floatingText(k.base.x, k.base.y-82, 'AI修塔 +400', '#9ef59e');
+    }
+
+    // AI 會一直升級，直到 100 次上限；升級只能讓血量和攻擊變強，不會解鎖亂創的攻擊物。
+    k.upgradeTimer -= dt;
+    if(k.upgradeTimer <= 0){
+      k.upgradeTimer = 7 + Math.random()*5;
+      if(k.gold >= 550 && (k.level || 1) < MAX_LEVEL){
+        k.gold -= 550;
+        k.level = Math.min(MAX_LEVEL, (k.level || 1) + 1);
+        flashAt(k.base.x,k.base.y,COLORS[k.team].hex);
+        floatingText(k.base.x, k.base.y-76, 'AI升級 Lv.'+k.level, '#ffffff');
+      }
+    }
+
+    // AI 會使用指定兵種：馬騎士、三重弓箭手、盾牌護衛、巨人、坦克。
+    if(!k.cavalryUnlocked){ k.cavalryUnlocked = true; floatingText(k.base.x, k.base.y-96, 'AI有馬騎士', '#fff'); }
+    if(!k.superArcherUnlocked){ k.superArcherUnlocked = true; floatingText(k.base.x, k.base.y-112, 'AI有三重弓', '#fff'); }
+    if(!k.shieldUnlocked && elapsed > 8){ k.shieldUnlocked = true; floatingText(k.base.x, k.base.y-128, '盾牌護衛', '#fff'); }
+    if(!k.giantUnlocked && elapsed > 18){ k.giantUnlocked = true; floatingText(k.base.x, k.base.y-144, '巨人出現', '#fff'); }
+
+    // AI 出兵：只會混合普通兵、弓箭手、馬騎士、三重弓箭手、盾牌護衛、巨人、坦克。
+    k.aiTimer -= dt;
+    if(k.aiTimer <= 0){
+      k.aiTimer = .26 + Math.random()*0.34;
+      if(ownCount > (TEAM_ORDER.length > 6 ? 42 : 78)) return;
+
+      let choices = [];
+      const add = (type, weight) => { if(k.gold >= TYPE[type].cost) choices.push({type, weight}); };
+
+      if(k.aiMode === 'defend'){
+        add('archer', 5);
+        add('superArcher', k.superArcherUnlocked ? 4 : 0);
+        add('shield', k.shieldUnlocked ? 4 : 0);
+        add('normal', 3);
+        add('cavalry', k.cavalryUnlocked ? 1 : 0);
+        add('giant', k.giantUnlocked ? 1 : 0);
+        add('tank', k.tankUnlocked ? 2 : 0);
+      } else {
+        add('normal', 2);
+        add('archer', 3);
+        add('cavalry', k.cavalryUnlocked ? 7 : 0);
+        add('superArcher', k.superArcherUnlocked ? 7 : 0);
+        add('shield', k.shieldUnlocked ? 5 : 0);
+        add('giant', k.giantUnlocked ? 5 : 0);
+        add('tank', k.tankUnlocked ? 7 : 0);
+      }
+
+      if(elapsed > 35 && k.gold >= TYPE.superArcher.cost && Math.random() < .35) choices.push({type:'superArcher', weight:7});
+      if(elapsed > 25 && k.gold >= TYPE.cavalry.cost && Math.random() < .32) choices.push({type:'cavalry', weight:6});
+      if(elapsed > 20 && k.giantUnlocked && k.gold >= TYPE.giant.cost && Math.random() < .22) choices.push({type:'giant', weight:7});
+      if(elapsed > 28 && k.tankUnlocked && k.gold >= TYPE.tank.cost && Math.random() < .30) choices.push({type:'tank', weight:9});
+
+      if(!choices.length) return;
+      const choice = weightedChoice(choices);
+      const cost = TYPE[choice].cost;
+      if(k.gold >= cost){
+        k.gold -= cost;
+        spawnUnit(k.team, choice, false);
+      }
     }
   }
 
-  function createBossTridentAttack(boss) {
-    const target = chooseBossAttackTarget(boss);
-    const attack = {
-      x: target.x,
-      y: target.y,
-      r: boss.bossAttackRadius || rules.ultimateBossAttackRadius,
-      damage: boss.bossAttackDamage || rules.ultimateBossAttackDamage,
-      timer: 1.35,
-      maxTimer: 1.35,
-      applied: false
-    };
-    game.bossAttacks.push(attack);
-    showFloat('三叉戟锁定！', attack.x, attack.y - attack.r - 10, '#ff8b8b');
-    for (let i = 0; i < 16; i++) addParticle(boss.x + rand(-12, 12), boss.y - 70 + rand(-12, 12), rand(-60, 60), rand(-80, 10), '#ff6565', 0.65, 4);
+  function weightedChoice(list){
+    const total = list.reduce((s, x) => s + Math.max(0, x.weight), 0);
+    let r = Math.random() * total;
+    for(const x of list){
+      r -= Math.max(0, x.weight);
+      if(r <= 0) return x.type;
+    }
+    return list[list.length-1].type;
   }
 
-  function chooseBossAttackTarget(boss) {
-    const candidates = [];
-    for (const t of game.towers) if (t.hp > 0) candidates.push({ x: t.x, y: t.y });
-    for (const g of game.guards) if (g.hp > 0) candidates.push({ x: g.x, y: g.y });
-    if (!candidates.length) return { x: game.castle.x + game.castle.w + 30, y: game.castle.y + game.castle.h * 0.62 };
-
-    let best = candidates[0];
-    let bestScore = Infinity;
-    for (const c of candidates) {
-      const score = dist(boss.x, boss.y, c.x, c.y) + rand(0, 90);
-      if (score < bestScore) {
-        bestScore = score;
-        best = c;
+  function nearestEnemyTeamNear(team,x,y){
+    let best=null, bd=Infinity;
+    units.forEach(u => {
+      if(u.team !== team && kingdoms[u.team]?.alive){
+        const d = dist2(x,y,u.x,u.y);
+        if(d < bd){bd=d; best=u.team;}
       }
-    }
-    return best;
+    });
+    return best || chooseAiTarget(team);
   }
 
-  function updateBossAttacks(dt) {
-    for (const a of game.bossAttacks) {
-      a.timer -= dt;
-      if (!a.applied && a.timer <= 0) {
-        a.applied = true;
-        applyBossTridentAttack(a);
-      }
+  function loop(now, runId){
+    if(runId !== currentRunId || !running) return;
+    try{
+      const rawDt = Math.min(.033, (now-lastTime)/1000 || .016);
+      lastTime = now;
+      if(!paused && !gameEnded){ update(rawDt); }
+      draw();
+      requestAnimationFrame(nextNow => loop(nextNow, runId));
+    }catch(err){
+      console.error(err);
+      running = false;
+      gameEnded = false;
+      draw();
+      startScreen.style.display = 'flex';
+      message('畫面已修復，請重新選顏色開始');
     }
-    game.bossAttacks = game.bossAttacks.filter(a => a.timer > -0.38);
   }
 
-  function applyBossTridentAttack(a) {
-    screenShake(6);
-    showFloat('三叉戟轰击！', a.x, a.y - a.r - 14, '#ffdfdf');
-    for (const g of game.guards) {
-      if (g.hp > 0 && dist(g.x, g.y, a.x, a.y) <= a.r) {
-        damageGuard(g, a.damage);
-        showFloat('-' + a.damage, g.x, g.y - 40, '#ff8b8b');
-      }
+  function update(dt){
+    elapsed += dt;
+    cameraShake = Math.max(0,cameraShake - dt*7);
+    TEAM_ORDER.forEach(t => aiStep(kingdoms[t], dt));
+    updateWildMonsters(dt);
+    updateUnits(dt);
+    updateProjectiles(dt);
+    updateParticles(dt);
+    updateFloating(dt);
+    if(Math.floor(elapsed) !== lastSecond){
+      lastSecond = Math.floor(elapsed);
+      passivePlayerIncome();
     }
-    for (const t of game.towers) {
-      if (t.hp > 0 && dist(t.x, t.y, a.x, a.y) <= a.r) {
-        t.hp -= a.damage;
-        showFloat('炮台 -' + a.damage, t.x, t.y - 52, '#ff8b8b');
-        if (t.hp <= 0) {
-          t.hp = 0;
-          showFloat('炮台损坏', t.x, t.y - 72, '#ffb0b0');
-          if (t.plot) t.plot.tower = null;
-        }
-      }
-    }
-    if (circleRectOverlap(a.x, a.y, a.r, game.castle.x, game.castle.y, game.castle.w, game.castle.h)) {
-      const castleDmg = Math.round(a.damage * 1.5);
-      game.castle.hp -= castleDmg;
-      showFloat('城堡 -' + castleDmg, game.castle.x + 96, game.castle.y + 70, '#ff6b6b');
-    }
-    for (let i = 0; i < 44; i++) addParticle(a.x + rand(-a.r * 0.65, a.r * 0.65), a.y + rand(-a.r * 0.45, a.r * 0.45), rand(-90, 90), rand(-120, 35), i % 2 ? '#ff5a5a' : '#ffd3a3', 0.7, rand(3, 6));
+    updateHud();
+    updateShopButtons();
+    checkEnd();
   }
 
-  function findGuardInMelee(z) {
-    let best = null;
-    let bestD = Infinity;
-    for (const g of game.guards) {
-      if (g.hp <= 0) continue;
-      const d = dist(z.x, z.y, g.x, g.y);
-      if (d < 35 && d < bestD) {
-        bestD = d;
-        best = g;
-      }
+  function passivePlayerIncome(){
+    const p = getPlayer();
+    if(p && p.alive) {
+      const income = Math.min(MAX_INCOME, p.incomePerSecond || INCOME_START);
+      p.incomePerSecond = income;
+      p.gold += income;
+      floatingText(p.base.x, p.base.y-95, '+$' + Math.floor(income) + '/秒', '#ffd86d');
     }
-    return best;
   }
 
-  function damageZombie(z, amount, sourceTower, tag = '') {
-    if (!z.alive) return;
-    z.hp -= amount;
-    if (sourceTower) z.hitByTowerId = sourceTower.id;
-    if (z.hp <= 0) {
-      z.alive = false;
-      const reward = z.reward || rules.reward;
-      game.money += reward;
-      showFloat('+$' + reward, z.x, z.y - 30, '#f6d36b');
-      showFloat(tag ? tag + ' 击倒' : '击倒', z.x, z.y - 50, '#fff2a8');
-      burstZombie(z.x, z.y, z.colorMode);
-      if (z.colorMode === 'ultimate') {
-        game.message = '终极魔王被打倒了！这一晚不会再生产僵尸，倒计时结束后进入下一天。';
-        game.messageTimer = 6;
-        showFloat('魔王倒下！', z.x, z.y - 110, '#fff2a8');
-        screenShake(7);
-      }
-      if (sourceTower) {
-        sourceTower.kills++;
-        sourceTower.totalKills++;
-        if (sourceTower.kills >= rules.towerKillsForUpgrade && sourceTower.level < rules.towerMaxLevel) {
-          sourceTower.readyUpgrade = true;
-          sourceTower.kills = rules.towerKillsForUpgrade;
-          game.selectedTower = sourceTower;
-          game.selectedPlot = null;
-          game.message = '炮台金条亮了！点击炮台，选择免费升级属性。';
-          game.messageTimer = 5;
+  function updateUnits(dt){
+    // 分散一點，避免完全重疊
+    for(let i=0;i<units.length;i++){
+      const a=units[i];
+      for(let j=i+1;j<units.length;j++){
+        const b=units[j];
+        const d2=dist2(a.x,a.y,b.x,b.y);
+        if(d2 > 0 && d2 < 18*18){
+          const d=Math.sqrt(d2), push=(18-d)*.22;
+          const nx=(a.x-b.x)/d, ny=(a.y-b.y)/d;
+          a.x += nx*push; a.y += ny*push; b.x -= nx*push; b.y -= ny*push;
         }
       }
     }
-  }
 
-  function updateGuards(dt) {
-    for (const g of game.guards) {
-      if (g.hp <= 0) continue;
-      g.attackCooldown -= dt;
-      const target = nearestZombie(g.x, g.y, rules.guardAggroRange);
-
-      if (target) {
-        const d = dist(g.x, g.y, target.x, target.y);
-        if (d > 26) {
-          // 护卫会主动冲出去打，不会只站在城堡旁边等。
-          const a = Math.atan2(target.y - g.y, target.x - g.x);
-          g.x += Math.cos(a) * g.speed * 1.25 * dt;
-          g.y += Math.sin(a) * g.speed * 1.25 * dt;
-        } else if (g.attackCooldown <= 0) {
-          g.attackCooldown = 0.75;
-          damageZombie(target, g.damage, null, '护卫');
-          showFloat('-' + g.damage, target.x, target.y - 36, '#ffe6a3');
-          addSlash(target.x, target.y);
+    units.forEach(u => {
+      if(u.hp <= 0) return;
+      u.cd -= dt;
+      const k = kingdoms[u.team];
+      if(!k || !k.alive){ u.hp = 0; return; }
+      const mode = u.team === playerTeam ? playerMode : k.aiMode;
+      const targetTeam = u.team === playerTeam ? selectedTarget : (k.aiTarget || chooseAiTarget(u.team));
+      const healTarget = u.hp < u.maxHp * .6 ? findHealMonster(u, 540) : null;
+      let target = healTarget || findCombatTarget(u, targetTeam);
+      if(target){
+        const dx = target.x - u.x, dy = target.y - u.y;
+        const d = Math.max(1, Math.hypot(dx,dy));
+        if(d > u.range * .88){
+          moveToward(u, target.x, target.y, dt);
+        } else {
+          u.vx *= .75; u.vy *= .75;
+          if(u.cd <= 0){ attack(u,target); u.cd = TYPE[u.type].cooldown; }
         }
       } else {
-        const dHome = dist(g.x, g.y, g.homeX, g.homeY);
-        if (dHome > 4) {
-          const a = Math.atan2(g.homeY - g.y, g.homeX - g.x);
-          g.x += Math.cos(a) * g.speed * 0.55 * dt;
-          g.y += Math.sin(a) * g.speed * 0.55 * dt;
+        let gx, gy;
+        if(mode === 'defend'){
+          const anchorAngle = (u.id % 12) / 12 * Math.PI*2;
+          const anchorR = 72 + (u.id % 4)*13;
+          gx = k.base.x + Math.cos(anchorAngle)*anchorR;
+          gy = k.base.y + Math.sin(anchorAngle)*anchorR;
+        } else if(targetTeam && kingdoms[targetTeam]?.alive) {
+          const tb = kingdoms[targetTeam].base;
+          const fromBase = dist(k.base.x,k.base.y,tb.x,tb.y);
+          const toArena = dist(u.x,u.y,ARENA.x,ARENA.y);
+          const arenaExit = pointToward(ARENA.x, ARENA.y, tb.x, tb.y, ARENA.r * .72);
+          // 先進入戰鬥場，再從靠近目標國家的出口出去。這樣不會一直卡在中間。
+          if(fromBase > 80 && toArena > ARENA.r * .88){
+            gx = ARENA.x + (Math.random()-.5)*24;
+            gy = ARENA.y + (Math.random()-.5)*24;
+          } else if(toArena < ARENA.r * .76 && dist(u.x,u.y,arenaExit.x,arenaExit.y) > 32){
+            gx = arenaExit.x; gy = arenaExit.y;
+          } else {
+            gx = tb.x; gy = tb.y;
+          }
+        } else {
+          gx = ARENA.x; gy = ARENA.y;
+        }
+        moveToward(u,gx,gy,dt);
+        // 如果靠近敵方塔，攻擊塔
+        if(targetTeam && kingdoms[targetTeam]?.alive){
+          const tb = kingdoms[targetTeam].base;
+          if(dist(u.x,u.y,tb.x,tb.y) < u.range + 42 && u.cd <= 0){
+            attackTower(u, targetTeam);
+            u.cd = TYPE[u.type].cooldown;
+          }
         }
       }
-    }
-    game.guards = game.guards.filter(g => g.hp > 0);
+      u.x = clamp(u.x, 18, W-18);
+      u.y = clamp(u.y, 18, H-18);
+    });
+    units = units.filter(u => u.hp > 0);
   }
 
-  function damageGuard(g, amount) {
-    g.hp -= amount;
-    if (g.hp <= 0) {
-      g.hp = 0;
-      showFloat('护卫倒下', g.x, g.y - 32, '#ffb0b0');
-      for (let i = 0; i < 10; i++) addParticle(g.x, g.y, rand(-35, 35), rand(-35, 35), '#b0653c', 0.5, 3);
-    }
+  function findCombatTarget(u, preferredTeam){
+    let best = null, bd = Infinity;
+    const ranged = (TYPE[u.type].kind === 'ranged' || TYPE[u.type].kind === 'ranged3');
+    const sight = ranged ? u.range*u.range : (u.type === 'tank' ? 210*210 : (u.type === 'giant' ? 150*150 : 120*120));
+
+    // 攻擊模式時，優先打你指定的國家，避免士兵在戰鬥場被其他國家拖住。
+    units.forEach(v => {
+      if(v.team === u.team || !kingdoms[v.team]?.alive || v.hp <= 0) return;
+      if(preferredTeam && v.team !== preferredTeam) return;
+      const d = dist2(u.x,u.y,v.x,v.y);
+      if(d < sight && d < bd){ bd = d; best = v; }
+    });
+    if(best) return best;
+
+    // 只有敵人貼臉擋路時，才反擊其他國家。
+    const emergencySight = Math.max(42, u.range + 18);
+    bd = emergencySight * emergencySight;
+    units.forEach(v => {
+      if(v.team === u.team || !kingdoms[v.team]?.alive || v.hp <= 0) return;
+      const d = dist2(u.x,u.y,v.x,v.y);
+      if(d < bd){ bd = d; best = v; }
+    });
+    return best;
   }
 
-  function updateTowers(dt) {
-    for (const t of game.towers) {
-      if (t.hp <= 0) continue;
-      t.cooldown -= dt;
-      if (t.cooldown <= 0) {
-        const target = foremostZombieInRange(t.x, t.y, t.range, t.element || '普通');
-        if (target) {
-          t.cooldown = Math.max(0.035, t.fireRate);
-          fireTower(t, target);
-        }
-      }
-    }
-    game.towers = game.towers.filter(t => t.hp > 0);
+  function moveToward(u,x,y,dt){
+    const dx=x-u.x, dy=y-u.y;
+    const d=Math.max(1,Math.hypot(dx,dy));
+    const sp = u.speed * (u.type==='cavalry' ? (1 + Math.min(.25, d/900)) : 1);
+    u.vx = dx/d*sp;
+    u.vy = dy/d*sp;
+    u.x += u.vx*dt;
+    u.y += u.vy*dt;
   }
 
-  function fireTower(t, target) {
-    const bullet = {
-      x: t.x,
-      y: t.y - 18,
-      tx: target.x,
-      ty: target.y,
-      target,
-      tower: t,
-      speed: 560,
-      damage: t.damage,
-      life: 1.2,
-      kind: t.element || '普通'
-    };
-    game.bullets.push(bullet);
-  }
-
-  function updateBullets(dt) {
-    for (const b of game.bullets) {
-      b.life -= dt;
-      if (!b.target || !b.target.alive || b.life <= 0) {
-        b.dead = true;
-        continue;
-      }
-      b.tx = b.target.x;
-      b.ty = b.target.y;
-      const d = dist(b.x, b.y, b.tx, b.ty);
-      if (d < 11) {
-        applyBulletHit(b);
-        b.dead = true;
+  function attack(u,target){
+    if(target && target.isMonster){
+      if(u.type === 'archer'){
+        shootArrow(u,target,0);
+      } else if(u.type === 'superArcher'){
+        shootArrow(u,target,-.18); shootArrow(u,target,0); shootArrow(u,target,.18);
+      } else if(u.type === 'tank'){
+        tankBlast(u, target, true);
       } else {
-        const a = Math.atan2(b.ty - b.y, b.tx - b.x);
-        b.x += Math.cos(a) * b.speed * dt;
-        b.y += Math.sin(a) * b.speed * dt;
+        const died = damageMonster(target, u.damage, u.team, u);
+        slash(u,target);
+        if(died) burst(target.x,target.y,'#a6ff87',18);
       }
-    }
-    game.bullets = game.bullets.filter(b => !b.dead);
-  }
-
-  function applyBulletHit(b) {
-    if (!b.target || !b.target.alive) return;
-    if (isZombieImmuneToElement(b.target, b.kind)) {
-      showFloat('闪电免疫', b.target.x, b.target.y - 42, '#87f6ff');
-      for (let i = 0; i < 8; i++) addParticle(b.target.x + rand(-14, 14), b.target.y + rand(-58, -16), rand(-35, 35), rand(-35, 10), '#87f6ff', 0.32, 3);
       return;
     }
-    let label = '';
-    if (b.kind === '雷射') label = '雷';
-    if (b.kind === '火焰') {
-      label = '火';
-      b.target.burnTimer = Math.max(b.target.burnTimer, 2.0);
-      b.target.burnTick = 0.15;
+    if(u.type === 'archer'){
+      shootArrow(u,target,0);
+    } else if(u.type === 'superArcher'){
+      shootArrow(u,target,-.18); shootArrow(u,target,0); shootArrow(u,target,.18);
+    } else if(u.type === 'tank'){
+      tankBlast(u, target, false);
+    } else {
+      const died = damageUnit(target, u.damage, u.team, true);
+      slash(u,target);
+      if(u.type === 'shield'){
+        const dx = target.x - u.x, dy = target.y - u.y;
+        const d = Math.max(1, Math.hypot(dx,dy));
+        target.x += dx/d*10; target.y += dy/d*10;
+        floatingText(target.x, target.y-22, '盾擊 50', '#d9f0ff');
+      }
+      if(u.type === 'giant'){
+        floatingText(target.x, target.y-26, '-100 巨人重擊', '#ffe7a8');
+        cameraShake = Math.max(cameraShake, .12);
+      }
+      if(died) unitKilled(target,u.team);
     }
-    if (b.kind === '寒冰') {
-      label = '冰';
-      b.target.slowTimer = Math.max(b.target.slowTimer, 1.6);
-      b.target.slowAmount = Math.max(b.target.slowAmount, 0.45);
+  }
+  function tankBlast(u, target, monsterMain=false){
+    const info = TYPE.tank;
+    const bx = target.x, by = target.y;
+    cameraShake = Math.max(cameraShake, .20);
+    burst(bx, by, COLORS[u.team].hex, 24);
+    floatingText(bx, by-32, '坦克轟擊 250', '#ffe7a8');
+
+    if(monsterMain && target.isMonster){
+      const diedMonster = damageMonster(target, u.damage, u.team, u);
+      if(diedMonster) burst(target.x,target.y,'#a6ff87',18);
     }
-    if (b.kind === '草地') {
-      label = '草';
-      b.target.slowTimer = Math.max(b.target.slowTimer, 0.8);
-      b.target.slowAmount = Math.max(b.target.slowAmount, 0.22);
-    }
-    damageZombie(b.target, b.damage, b.tower, label);
-    if (Math.random() < 0.18) showFloat('-' + b.damage, b.target.x, b.target.y - 30, '#ffffff');
-    addParticle(b.target.x, b.target.y, rand(-10, 10), rand(-20, 12), elementColor(b.kind), 0.24, 2);
+
+    units.forEach(v => {
+      if(v.team === u.team || v.hp <= 0 || !kingdoms[v.team]?.alive) return;
+      if(dist(v.x,v.y,bx,by) <= info.aoe){
+        const died = damageUnit(v, u.damage, u.team, true);
+        spark(v.x,v.y,COLORS[u.team].hex);
+        if(died) unitKilled(v,u.team);
+      }
+    });
+
+    wildMonsters.forEach(m => {
+      if(m.hp <= 0 || m === target) return;
+      if(dist(m.x,m.y,bx,by) <= info.aoe){
+        const died = damageMonster(m, Math.round(u.damage * .8), u.team, u);
+        if(died) burst(m.x,m.y,'#a6ff87',14);
+      }
+    });
   }
 
-  function foremostZombieInRange(x, y, range, towerKind = '普通') {
-    let best = null;
-    let bestProgress = -Infinity;
-    let bestDistance = Infinity;
-    for (const z of game.zombies) {
-      if (!z.alive || z.materializeTimer > 0) continue;
-      if (isZombieImmuneToElement(z, towerKind)) continue;
-      const d = dist(x, y, z.x, z.y);
-      if (d <= range) {
-        // 炮台优先打“最前面的僵尸”：也就是沿路最靠近城堡、progress 最大的那只。
-        if (z.progress > bestProgress || (z.progress === bestProgress && d < bestDistance)) {
-          bestProgress = z.progress;
-          bestDistance = d;
-          best = z;
+  function attackTower(u,team){
+    const k = kingdoms[team];
+    if(!k || !k.alive) return;
+    if(TYPE[u.type].kind === 'ranged' || TYPE[u.type].kind === 'ranged3'){
+      const fake = {x:k.base.x, y:k.base.y, hp:k.towerHp, towerTeam:team};
+      if(TYPE[u.type].kind === 'ranged') shootArrow(u,fake,0,true);
+      else { shootArrow(u,fake,-.16,true); shootArrow(u,fake,0,true); shootArrow(u,fake,.16,true); }
+      return;
+    }
+    k.towerHp -= u.damage;
+    if(u.type === 'tank'){
+      cameraShake = Math.max(cameraShake, .22);
+      burst(k.base.x,k.base.y,COLORS[u.team].hex,28);
+      units.forEach(v => {
+        if(v.team === u.team || v.team !== team || v.hp <= 0) return;
+        if(dist(v.x,v.y,k.base.x,k.base.y) <= TYPE.tank.aoe){
+          const died = damageUnit(v, Math.round(u.damage*.7), u.team, true);
+          if(died) unitKilled(v,u.team);
+        }
+      });
+    }
+    cameraShake = Math.max(cameraShake, .14);
+    flashAt(k.base.x,k.base.y,'#fff');
+    if(k.towerHp <= 0) destroyKingdom(team, u.team);
+  }
+  function shootArrow(u,target,spread=0,tower=false){
+    const ang = Math.atan2(target.y-u.y,target.x-u.x) + spread;
+    projectiles.push({
+      x:u.x, y:u.y, vx:Math.cos(ang)*360, vy:Math.sin(ang)*360,
+      team:u.team, ownerId:u.id, damage:u.damage, life:1.25, target, tower, radius:4, type:'arrow'
+    });
+  }
+
+  function fireSiege(team, targetTeam, fromPlayer){
+    const k = kingdoms[team];
+    const targetK = kingdoms[targetTeam];
+    if(!k || !targetK || !k.alive || !targetK.alive) return;
+    const candidates = units.filter(u => u.team === targetTeam && u.hp > 0);
+    let tx = targetK.base.x, ty = targetK.base.y;
+    if(candidates.length){
+      const pick = candidates[Math.floor(Math.random()*candidates.length)];
+      tx = pick.x; ty = pick.y;
+    }
+    const ang = Math.atan2(ty-k.base.y, tx-k.base.x);
+    const dmg = Math.round(SIEGE_DAMAGE * (1 + (k.level-1)*.06));
+    projectiles.push({
+      x:k.base.x, y:k.base.y, vx:Math.cos(ang)*250, vy:Math.sin(ang)*250,
+      team, damage:dmg, life:3.6, type:'siege', radius:13, aoe:SIEGE_AOE,
+      targetPoint:{x:tx, y:ty}, towerTeam:targetTeam
+    });
+    floatingText(k.base.x, k.base.y-110, '攻城火球！', '#ffdf6d');
+    if(fromPlayer) message('攻城火球發射！');
+  }
+
+  function updateProjectiles(dt){
+    projectiles.forEach(p => {
+      p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt;
+      if(p.type === 'siege'){
+        if(p.life <= 0 || dist(p.x,p.y,p.targetPoint.x,p.targetPoint.y) < 18){
+          siegeExplode(p);
+          p.life = 0;
+        }
+        return;
+      }
+      if(p.life <= 0) return;
+      if(p.tower && p.target.towerTeam){
+        const k = kingdoms[p.target.towerTeam];
+        if(k && k.alive && dist(p.x,p.y,k.base.x,k.base.y) < 42){
+          k.towerHp -= p.damage;
+          p.life = 0;
+          flashAt(k.base.x,k.base.y,'#fff');
+          if(k.towerHp <= 0) destroyKingdom(p.target.towerTeam,p.team);
+        }
+      } else {
+        let monsterHit = null;
+        for(const m of wildMonsters){
+          if(m.hp > 0 && dist(p.x,p.y,m.x,m.y) < m.radius + 8){ monsterHit = m; break; }
+        }
+        if(monsterHit){
+          const owner = units.find(u => u.id === p.ownerId && u.hp > 0);
+          damageMonster(monsterHit, p.damage, p.team, owner);
+          p.life = 0;
+          spark(monsterHit.x,monsterHit.y,'#a6ff87');
+          return;
+        }
+        let hit = null;
+        for(const u of units){
+          if(u.team !== p.team && u.hp > 0 && dist(p.x,p.y,u.x,u.y) < 13){ hit = u; break; }
+        }
+        if(hit){
+          const died = damageUnit(hit, p.damage, p.team, true);
+          p.life = 0;
+          spark(hit.x,hit.y,COLORS[p.team].hex);
+          if(died) unitKilled(hit,p.team);
         }
       }
+    });
+    projectiles = projectiles.filter(p => p.life > 0 && p.x > -40 && p.x < W+40 && p.y > -40 && p.y < H+40);
+  }
+
+  function siegeExplode(p){
+    cameraShake = Math.max(cameraShake, .24);
+    burst(p.x,p.y,COLORS[p.team].hex,30);
+    floatingText(p.x,p.y-24,'爆炸！','#ffdf6d');
+    units.forEach(u => {
+      if(u.team !== p.team && u.hp > 0 && dist(u.x,u.y,p.x,p.y) < p.aoe){
+        const died = damageUnit(u, p.damage, p.team, true);
+        spark(u.x,u.y,COLORS[p.team].hex);
+        if(died) unitKilled(u,p.team);
+      }
+    });
+    const targetK = kingdoms[p.towerTeam];
+    if(targetK && targetK.alive && dist(p.x,p.y,targetK.base.x,targetK.base.y) < p.aoe + 42){
+      targetK.towerHp -= Math.round(p.damage * 1.2);
+      flashAt(targetK.base.x,targetK.base.y,'#ffdf6d');
+      if(targetK.towerHp <= 0) destroyKingdom(p.towerTeam,p.team);
+    }
+  }
+
+  function spawnWildMonster(initial=false){
+    const arenaPlace = initial || Math.random() < .62;
+    let x, y;
+    if(arenaPlace){
+      const a = Math.random()*Math.PI*2;
+      const r = Math.random()*ARENA.r*.82;
+      x = ARENA.x + Math.cos(a)*r;
+      y = ARENA.y + Math.sin(a)*r;
+    } else {
+      // 外圍野怪：不要太靠近塔，但要在路旁能被找到。
+      const side = Math.floor(Math.random()*4);
+      const margin = 120;
+      if(side === 0){ x = margin + Math.random()*(W-margin*2); y = 92 + Math.random()*70; }
+      else if(side === 1){ x = W - 92 - Math.random()*70; y = margin + Math.random()*(H-margin*2); }
+      else if(side === 2){ x = margin + Math.random()*(W-margin*2); y = H - 92 - Math.random()*70; }
+      else { x = 92 + Math.random()*70; y = margin + Math.random()*(H-margin*2); }
+    }
+    const tough = elapsed > 90 ? 1.45 : (elapsed > 45 ? 1.2 : 1);
+    wildMonsters.push({
+      id: wildSpawnId++, isMonster:true,
+      x, y, vx:0, vy:0,
+      hp: Math.round(240*tough), maxHp: Math.round(240*tough),
+      damage: Math.round(10*tough), heal: Math.round(260*tough),
+      radius: 17, cd: Math.random()*.7, wobble: Math.random()*Math.PI*2
+    });
+  }
+
+  function updateWildMonsters(dt){
+    wildSpawnTimer -= dt;
+    if(wildSpawnTimer <= 0){
+      wildSpawnTimer = 4.2 + Math.random()*3.2;
+      if(wildMonsters.length < 10) spawnWildMonster(false);
+    }
+
+    wildMonsters.forEach(m => {
+      m.cd -= dt;
+      m.wobble += dt*2.4;
+      // 小幅度在原地晃動，看起來像活的野怪。
+      m.x += Math.cos(m.wobble) * dt * 7;
+      m.y += Math.sin(m.wobble*1.3) * dt * 7;
+      m.x = clamp(m.x, 40, W-40);
+      m.y = clamp(m.y, 40, H-40);
+
+      let near = null, bd = Infinity;
+      for(const u of units){
+        if(u.hp <= 0) continue;
+        const d2 = dist2(m.x,m.y,u.x,u.y);
+        if(d2 < bd){ bd = d2; near = u; }
+      }
+      if(near && bd < 34*34 && m.cd <= 0){
+        const died = damageUnit(near, m.damage, 'wild', false);
+        m.cd = .9;
+        floatingText(near.x, near.y-28, '-'+m.damage+' 野怪', '#caff9e');
+        if(died){
+          near.hp = 0;
+          burst(near.x,near.y,COLORS[near.team]?.hex || '#fff',10);
+          floatingText(near.x, near.y-44, '被野怪打倒', '#fff');
+        }
+      }
+    });
+    wildMonsters = wildMonsters.filter(m => m.hp > 0);
+  }
+
+  function findHealMonster(u, maxDist){
+    let best = null, bd = maxDist*maxDist;
+    for(const m of wildMonsters){
+      if(m.hp <= 0) continue;
+      const d2 = dist2(u.x,u.y,m.x,m.y);
+      if(d2 < bd){ bd = d2; best = m; }
     }
     return best;
   }
 
-  function nearestZombie(x, y, range) {
-    let best = null;
-    let bestScore = Infinity;
-    for (const z of game.zombies) {
-      if (!z.alive) continue;
-      const d = dist(x, y, z.x, z.y);
-      if (d <= range) {
-        const score = d;
-        if (score < bestScore) {
-          bestScore = score;
-          best = z;
+  function damageMonster(monster, amount, attackerTeam, attackerUnit){
+    monster.hp -= amount;
+    floatingText(monster.x, monster.y-24, '-'+Math.round(amount), '#eaffd3');
+    if(monster.hp <= 0){
+      monster.hp = 0;
+      if(attackerUnit && attackerUnit.hp > 0){
+        const before = attackerUnit.hp;
+        attackerUnit.hp = Math.min(attackerUnit.maxHp, attackerUnit.hp + monster.heal);
+        const healed = Math.round(attackerUnit.hp - before);
+        if(healed > 0){
+          floatingText(attackerUnit.x, attackerUnit.y-42, '+回血 '+healed, '#9eff8f');
+        } else {
+          floatingText(attackerUnit.x, attackerUnit.y-42, '血已滿', '#9eff8f');
         }
       }
-    }
-    return best;
-  }
-
-  function summonGuard() {
-    if (game.state !== STATE.PLAY) return;
-    if (game.money < rules.guardCost) {
-      game.message = '金币不够，召唤护卫需要 $' + rules.guardCost;
-      game.messageTimer = 2.2;
-      return;
-    }
-    game.money -= rules.guardCost;
-    const offset = game.guards.length * 18;
-    const g = {
-      x: 232,
-      y: 292 + offset % 72,
-      homeX: 232,
-      homeY: 292 + offset % 72,
-      hp: rules.guardHp,
-      maxHp: rules.guardHp,
-      damage: rules.guardDamage,
-      speed: 92,
-      attackCooldown: 0
-    };
-    game.guards.push(g);
-    showFloat('护卫加入', g.x, g.y - 30, '#cde6ff');
-  }
-
-  function buildTowerOnPlot(plot) {
-    if (game.money < rules.towerCost) {
-      game.message = '金币不够，普通炮台需要 $' + rules.towerCost;
-      game.messageTimer = 2.2;
-      return;
-    }
-    game.money -= rules.towerCost;
-    const tower = {
-      id: Date.now() + Math.floor(Math.random() * 10000),
-      x: plot.x,
-      y: plot.y,
-      hp: rules.towerHp,
-      maxHp: rules.towerHp,
-      damage: rules.towerDamage,
-      fireRate: rules.towerFireRate,
-      cooldown: 0,
-      range: rules.towerRange,
-      level: 0,
-      paidLevel: 0,
-      kills: 0,
-      totalKills: 0,
-      readyUpgrade: false,
-      element: '普通',
-      plot
-    };
-    plot.tower = tower;
-    game.towers.push(tower);
-    game.selectedTower = tower;
-    game.selectedPlot = null;
-    showFloat('普通连发炮台', tower.x, tower.y - 50, '#e8e0a5');
-  }
-
-  function unlockPlot(plot) {
-    if (game.money < rules.unlockGrassCost) {
-      game.message = '金币不够，买开草丛需要 $' + rules.unlockGrassCost;
-      game.messageTimer = 2.2;
-      return;
-    }
-    game.money -= rules.unlockGrassCost;
-    plot.unlocked = true;
-    game.selectedPlot = plot;
-    showFloat('草丛买开', plot.x, plot.y - 38, '#9effa9');
-  }
-
-  function paidUpgradeTower(tower) {
-    if (!tower) return;
-    if (tower.paidLevel >= rules.towerPaidUpgradeMax) {
-      game.message = '这个炮台已经付费强化满级了。';
-      game.messageTimer = 2.5;
-      return;
-    }
-    if (game.money < rules.towerPaidUpgradeCost) {
-      game.message = '金币不够，炮台强化需要 $' + rules.towerPaidUpgradeCost + '。';
-      game.messageTimer = 2.5;
-      return;
-    }
-    game.money -= rules.towerPaidUpgradeCost;
-    tower.paidLevel++;
-    tower.damage += 1;
-    tower.range += 18;
-    tower.maxHp += 25;
-    tower.hp = Math.min(tower.maxHp, tower.hp + 25);
-    tower.fireRate = Math.max(0.04, tower.fireRate - 0.006);
-    tower.cooldown = Math.min(tower.cooldown, tower.fireRate);
-    showFloat('强化 Lv.' + tower.paidLevel, tower.x, tower.y - 75, '#f6c453');
-    game.message = '花费 $' + rules.towerPaidUpgradeCost + '，炮台强化到 Lv.' + tower.paidLevel + '：伤害、射程、血量、射速都提升了。';
-    game.messageTimer = 4.5;
-  }
-
-  function upgradeTower(tower, element) {
-    if (!tower || !tower.readyUpgrade || tower.level >= rules.towerMaxLevel) return;
-    tower.level++;
-    tower.readyUpgrade = false;
-    tower.kills = 0;
-    tower.element = element;
-
-    if (element === '雷射') {
-      tower.damage += 2;
-      tower.range += 25;
-      tower.fireRate = Math.max(0.045, tower.fireRate - 0.008);
-    } else if (element === '火焰') {
-      tower.damage += 1;
-      tower.range += 10;
-    } else if (element === '寒冰') {
-      tower.damage += 1;
-      tower.fireRate = Math.max(0.055, tower.fireRate - 0.004);
-    } else if (element === '草地') {
-      tower.maxHp += 50;
-      tower.hp = Math.min(tower.maxHp, tower.hp + 50);
-      tower.range += 18;
-    }
-
-    showFloat(element + '升级 Lv.' + tower.level, tower.x, tower.y - 62, elementColor(element));
-    game.message = '炮台已升级为「' + element + '」Lv.' + tower.level + '。下一次再击倒 10 只可继续免费升级。';
-    game.messageTimer = 5;
-  }
-
-  function handleCanvasClick(x, y) {
-    game.mouse.x = x;
-    game.mouse.y = y;
-
-    if (game.state === STATE.MENU) {
-      if (pointInRect(x, y, 410, 304, 180, 68)) startIntro();
-      return;
-    }
-
-    if (game.state === STATE.INTRO) return;
-
-    if (game.state === STATE.GAME_OVER || game.state === STATE.WIN) {
-      if (pointInRect(x, y, 385, 448, 230, 62)) {
-        game.state = STATE.MENU;
-        game.message = '';
+      if(kingdoms[attackerTeam]){
+        kingdoms[attackerTeam].gold += attackerTeam === playerTeam ? 80 : 60;
       }
-      return;
+      floatingText(monster.x, monster.y-38, '野怪倒下', '#d8ffd0');
+      return true;
     }
+    return false;
+  }
 
-    if (game.state !== STATE.PLAY) return;
 
-    // UI buttons first
-    for (const btn of game.uiButtons) {
-      if (pointInRect(x, y, btn.x, btn.y, btn.w, btn.h)) {
-        btn.onClick();
-        return;
+  function damageUnit(unit, amount, attackerTeam, showBlock=false){
+    let actual = amount;
+    if(unit.type === 'shield'){
+      actual = Math.ceil(amount * (TYPE.shield.block || .5));
+      if(showBlock && amount > 8){
+        floatingText(unit.x, unit.y-34, '格擋一半', '#b8e8ff');
       }
     }
-    for (const btn of game.upgradeButtons) {
-      if (pointInRect(x, y, btn.x, btn.y, btn.w, btn.h)) {
-        btn.onClick();
-        return;
-      }
-    }
+    unit.hp -= actual;
+    unit.killCredit = attackerTeam;
+    return unit.hp <= 0;
+  }
 
-    // Click tower
-    for (const t of game.towers) {
-      if (dist(x, y, t.x, t.y) < 34) {
-        game.selectedTower = t;
-        game.selectedPlot = null;
-        if (t.readyUpgrade) {
-          game.message = '选择一个免费属性升级：雷射 / 火焰 / 寒冰 / 草地。';
-          game.messageTimer = 3;
-        }
-        return;
-      }
-    }
-
-    // Click plot
-    for (const p of game.plots) {
-      if (dist(x, y, p.x, p.y) <= p.r + 4) {
-        game.selectedPlot = p;
-        game.selectedTower = p.tower || null;
-        if (!p.unlocked) {
-          unlockPlot(p);
-        } else if (!p.tower) {
-          buildTowerOnPlot(p);
-        }
-        return;
-      }
+  function unitKilled(unit, killerTeam){
+    unit.hp = 0;
+    burst(unit.x,unit.y,COLORS[unit.team].hex,10);
+    if(killerTeam === playerTeam){
+      kingdoms[playerTeam].gold += 200;
+      floatingText(unit.x,unit.y-20,'+$200','#ffd86d');
+    } else if(kingdoms[killerTeam]){
+      kingdoms[killerTeam].gold += 100;
     }
   }
 
-  canvas.addEventListener('click', (e) => {
-    const p = eventToCanvas(e);
-    handleCanvasClick(p.x, p.y);
-  });
+  function destroyKingdom(team,killerTeam){
+    const k=kingdoms[team];
+    if(!k || !k.alive) return;
+    k.alive = false; k.towerHp = 0;
+    units.forEach(u => { if(u.team === team) u.hp = 0; });
+    burst(k.base.x,k.base.y,COLORS[team].hex,40);
+    floatingText(k.base.x,k.base.y-80,COLORS[team].name+'滅國！','#fff');
+    if(killerTeam === playerTeam){ kingdoms[playerTeam].gold += 1000; message('你打下了' + COLORS[team].name + '戰國，獎勵 $1000！'); }
+    else if(team === playerTeam){ defeatedByTeam = killerTeam; message('你的塔被打爆了！'); }
+  }
 
-  canvas.addEventListener('mousemove', (e) => {
-    const p = eventToCanvas(e);
-    game.mouse.x = p.x;
-    game.mouse.y = p.y;
-  });
-
-  window.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'g') summonGuard();
-    if (e.key.toLowerCase() === 'r' && (game.state === STATE.GAME_OVER || game.state === STATE.WIN)) game.state = STATE.MENU;
-    if (e.key === 'Escape') {
-      game.selectedPlot = null;
-      game.selectedTower = null;
+  function checkEnd(){
+    if(!playerTeam || !kingdoms[playerTeam]) return;
+    const alive = TEAM_ORDER.filter(t => kingdoms[t].alive);
+    if(!kingdoms[playerTeam].alive){
+      endRound(false);
+      return;
     }
-  });
-
-  function eventToCanvas(e) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left) * (canvas.width / rect.width),
-      y: (e.clientY - rect.top) * (canvas.height / rect.height)
-    };
+    if(alive.length === 1 && alive[0] === playerTeam){
+      endRound(true);
+    }
   }
 
-  let shakePower = 0;
-  function screenShake(power) {
-    shakePower = Math.max(shakePower, power);
+  function endRound(won){
+    if(gameEnded) return;
+    gameEnded = true;
+    const enemyName = defeatedByTeam && COLORS[defeatedByTeam] ? COLORS[defeatedByTeam].name : 'AI';
+    document.getElementById('overTitle').textContent = won ? '你贏了！統一戰國！' : enemyName + '戰國贏了！';
+    document.getElementById('overText').textContent = won
+      ? '這一局是你贏，現在可以馬上重新打一局。'
+      : '這一局是 AI 贏，馬上重新打，下一局再反攻。';
+    document.getElementById('gameOver').style.display = 'flex';
+    startRestartCountdown();
   }
 
-  function render() {
+  function startRestartCountdown(){
+    if(restartTimer){ clearInterval(restartTimer); }
+    restartCountdownLeft = 5;
+    const cd = document.getElementById('restartCountdown');
+    cd.textContent = restartCountdownLeft + ' 秒後自動用同一個顏色重新開戰。';
+    restartTimer = setInterval(() => {
+      restartCountdownLeft--;
+      if(restartCountdownLeft <= 0){
+        clearInterval(restartTimer);
+        restartTimer = null;
+        if(playerTeam) initGame(playerTeam);
+      } else {
+        cd.textContent = restartCountdownLeft + ' 秒後自動用同一個顏色重新開戰。';
+      }
+    }, 1000);
+  }
+
+  function updateHud(){
+    if(!playerTeam) return;
+    const p = kingdoms[playerTeam];
+    const aliveCount = TEAM_ORDER.filter(t=>kingdoms[t].alive).length;
+    hud.innerHTML = `
+      <div class="pill">國家：<span style="color:${COLORS[playerTeam].hex}">${COLORS[playerTeam].name}</span></div>
+      <div class="pill">金幣：$${Math.floor(p.gold)}</div>
+      <div class="pill">每秒收入：+$${Math.floor(p.incomePerSecond || INCOME_START)}/${MAX_INCOME}</div>
+      <div class="pill">快速賺錢：Lv.${p.quickMoneyLevel || 0}/${MAX_QUICK_MONEY_LEVEL}</div>
+      <div class="pill">塔血：${Math.max(0,Math.ceil(p.towerHp))}/${p.towerMax}</div>
+      <div class="pill">目標：${kingdoms[selectedTarget]?.alive ? COLORS[selectedTarget].name : '無'}</div>
+      <div class="pill">模式：${playerMode==='attack'?'攻擊':'防守'}</div>
+      <div class="pill">等級：Lv.${p.level}（${Math.max(0,(p.level||1)-1)}/100）</div>
+      <div class="pill">升級效果：血量＋攻擊</div>
+      <div class="pill">野怪：${wildMonsters.length}</div>
+      <div class="pill">剩餘國家：${aliveCount}</div>
+    `;
+  }
+
+  function draw(){
     ctx.save();
-    if (shakePower > 0) {
-      ctx.translate(rand(-shakePower, shakePower), rand(-shakePower, shakePower));
-      shakePower *= 0.86;
-      if (shakePower < 0.2) shakePower = 0;
+    ctx.clearRect(0,0,W,H);
+    if(cameraShake > 0){
+      const s = cameraShake * 8;
+      ctx.translate((Math.random()-.5)*s, (Math.random()-.5)*s);
     }
-
-    if (game.state === STATE.MENU) drawMenu();
-    else if (game.state === STATE.INTRO) drawIntro();
-    else {
-      drawGameWorld();
-      drawGameUI();
-      if (game.state === STATE.GAME_OVER) drawEndOverlay(false);
-      if (game.state === STATE.WIN) drawEndOverlay(true);
-    }
-
-    drawParticles();
-    drawFloatTexts();
-    ctx.restore();
-  }
-
-  function drawMenu() {
-    drawNightBackground();
-    drawStars();
-    drawMenuZombies();
-
-    drawPixelText('僵尸生存', 500, 116, 58, '#f5f0d0', 'center');
-    drawPixelText('僵尸末日生存 · 第一天原型', 500, 168, 24, '#b7ccb9', 'center');
-
-    drawButton(410, 304, 180, 68, '开始', '#5e8f47', '#eafbd2', true);
-
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    roundRect(245, 404, 510, 104, 16, true, false);
-    ctx.fillStyle = '#f4f0dc';
-    ctx.font = '18px "Microsoft YaHei", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('守住 1000 血的城堡。每个黑夜 1 分钟，每波 5 只僵尸。初始金币 $300。', 500, 438);
-    ctx.fillText('打完一波后 10 秒会来下一波；黑夜结束后直接进入下一天，没有白天。', 500, 468);
-    ctx.fillText('第2天跑步者，第3天死神，第5天起每5天出现终极魔王。', 500, 496);
-  }
-
-  function drawMenuZombies() {
-    const t = game.time;
-    const configs = [
-      [120, 310, 1.35], [220, 260, 1.05], [318, 320, 0.92], [680, 315, 1.0],
-      [790, 255, 1.2], [890, 330, 0.95], [500, 242, 0.9], [80, 455, 1.15], [920, 460, 1.1]
-    ];
-    for (let i = 0; i < configs.length; i++) {
-      const [x, y, s] = configs[i];
-      drawBlockZombie(x, y + Math.sin(t * 1.5 + i) * 5, s, { lookX: 500, lookY: 338 });
-    }
-  }
-
-  function drawIntro() {
-    drawNightBackground();
-    drawStars();
-    const t = game.introTime;
-    const shake = t > 1.0 && t < 3.6 ? Math.sin(t * 36) * 8 : 0;
-
-    // 城堡外景
-    drawMoon(830, 90);
-    drawDistantTrees();
-    drawCastle(game.castle.x + 330 + shake, game.castle.y - 70, 220, 260, 1000, 1000, true);
     drawGround();
-
-    ctx.save();
-    ctx.globalAlpha = clamp((t - 0.4) / 1.2, 0, 1);
-    drawPixelText('外面的城堡开始晃动……', 500, 88, 30, '#f7edca', 'center');
+    drawArena();
+    TEAM_ORDER.forEach(drawBase);
+    drawWildMonsters();
+    drawProjectiles();
+    drawUnits();
+    drawParticles();
+    drawFloating();
+    if(paused){
+      ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='white'; ctx.font='900 48px Microsoft JhengHei, sans-serif'; ctx.textAlign='center';
+      ctx.fillText('暫停中', W/2, H/2);
+    }
     ctx.restore();
-
-    if (t > 1.5) {
-      const count = Math.floor(clamp((t - 1.5) * 4, 0, 9));
-      for (let i = 0; i < count; i++) {
-        const x = 295 + i * 55 + Math.sin(t * 3 + i) * 5;
-        const y = 428 + Math.sin(t * 4 + i) * 4;
-        drawBlockZombie(x, y, 0.92, { lookX: 500, lookY: 250 });
-      }
-      drawPixelText('一群方块僵尸出现了！', 500, 540, 28, '#c5ffb5', 'center');
-    }
-
-    if (t > 3.9) {
-      ctx.fillStyle = 'rgba(0,0,0,' + clamp((t - 3.9) / 0.8, 0, 1) + ')';
-      ctx.fillRect(0, 0, W, H);
-      ctx.globalAlpha = clamp((t - 4.2) / 0.6, 0, 1);
-      drawPixelText('DAY 1', 500, 300, 64, '#f6c453', 'center');
-      ctx.globalAlpha = 1;
-    }
   }
 
-  function drawGameWorld() {
-    drawDayBackground();
-    drawPath();
-    drawPlots();
-    drawCastle(game.castle.x, game.castle.y, game.castle.w, game.castle.h, game.castle.hp, game.castle.maxHp, false);
-    drawGhostWarning();
-    drawBossAttacks();
-
-    // draw range for selected tower
-    if (game.selectedTower) {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(246,196,83,0.32)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 8]);
-      ctx.beginPath();
-      ctx.arc(game.selectedTower.x, game.selectedTower.y, game.selectedTower.range, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    for (const t of game.towers) drawTower(t);
-    for (const g of game.guards) drawGuard(g);
-    for (const z of game.zombies) drawZombieActor(z);
-    for (const b of game.bullets) drawBullet(b);
-  }
-
-  function drawDayBackground() {
-    const grd = ctx.createLinearGradient(0, 0, 0, H);
-    grd.addColorStop(0, '#24364b');
-    grd.addColorStop(0.45, '#375332');
-    grd.addColorStop(1, '#26351e');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, W, H);
-
-    // grass texture
-    for (let i = 0; i < 180; i++) {
-      const x = (i * 73 + 31) % W;
-      const y = 88 + ((i * 137) % (H - 98));
-      ctx.fillStyle = i % 3 === 0 ? 'rgba(113,162,73,0.20)' : 'rgba(68,122,54,0.18)';
-      ctx.fillRect(x, y, 3, 10);
-    }
-  }
-
-  function drawNightBackground() {
-    const grd = ctx.createLinearGradient(0, 0, 0, H);
-    grd.addColorStop(0, '#101927');
-    grd.addColorStop(0.55, '#161d22');
-    grd.addColorStop(1, '#0c1110');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, W, H);
-  }
-
-  function drawStars() {
-    ctx.fillStyle = 'rgba(255,255,220,0.75)';
-    for (let i = 0; i < 70; i++) {
-      const x = (i * 97 + 17) % W;
-      const y = (i * 53 + 21) % 230;
-      const a = 0.35 + 0.4 * Math.sin(game.time * 2 + i);
-      ctx.globalAlpha = a;
-      ctx.fillRect(x, y, i % 4 === 0 ? 3 : 2, i % 5 === 0 ? 3 : 2);
+  function drawGround(){
+    ctx.fillStyle = '#214126'; ctx.fillRect(0,0,W,H);
+    ctx.globalAlpha = .18;
+    for(let i=0;i<90;i++){
+      const x=(i*137)%W, y=(i*79)%H;
+      ctx.fillStyle = i%2?'#31552d':'#142b1e';
+      ctx.beginPath(); ctx.ellipse(x,y,34+(i%5)*8,10+(i%3)*4,(i%7),0,Math.PI*2); ctx.fill();
     }
     ctx.globalAlpha = 1;
+    // 通往中間的道路
+    TEAM_ORDER.forEach(t => {
+      const b = kingdoms[t]?.base; if(!b) return;
+      ctx.strokeStyle='rgba(185,160,112,.35)'; ctx.lineWidth=22; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.quadraticCurveTo((b.x+ARENA.x)/2, (b.y+ARENA.y)/2, ARENA.x, ARENA.y); ctx.stroke();
+      ctx.strokeStyle='rgba(82,58,35,.25)'; ctx.lineWidth=4; ctx.stroke();
+    });
   }
-
-  function drawMoon(x, y) {
-    ctx.fillStyle = '#f2e9b8';
-    ctx.beginPath();
-    ctx.arc(x, y, 44, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#101927';
-    ctx.beginPath();
-    ctx.arc(x + 18, y - 5, 44, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  function drawDistantTrees() {
-    for (let i = 0; i < 20; i++) {
-      const x = i * 58 - 20;
-      const h = 50 + (i % 4) * 15;
-      ctx.fillStyle = '#0b1510';
-      ctx.fillRect(x + 18, 430 - h, 16, h);
-      ctx.fillStyle = '#102419';
-      ctx.beginPath();
-      ctx.moveTo(x, 430 - h + 15);
-      ctx.lineTo(x + 26, 330 - h);
-      ctx.lineTo(x + 58, 430 - h + 15);
-      ctx.closePath();
-      ctx.fill();
-    }
-  }
-
-  function drawGround() {
-    ctx.fillStyle = '#24351e';
-    ctx.fillRect(0, 452, W, 168);
-    ctx.fillStyle = '#423324';
-    ctx.fillRect(260, 492, 480, 44);
-  }
-
-  function drawPath() {
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#6f5b3a';
-    ctx.lineWidth = 64;
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
-    ctx.stroke();
-
-    ctx.strokeStyle = '#90764c';
-    ctx.lineWidth = 46;
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([10, 18]);
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // arrow direction
-    for (let p = 90; p < pathData.total - 100; p += 120) {
-      const pos = getPointOnPath(p);
-      drawArrow(pos.x, pos.y, pos.angle, 'rgba(40,28,18,0.35)');
-    }
-  }
-
-  function drawArrow(x, y, angle, color) {
+  function drawArena(){
     ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(angle);
-    ctx.fillStyle = color;
+    ctx.strokeStyle='rgba(255,230,150,.75)'; ctx.lineWidth=5;
+    ctx.fillStyle='rgba(94,76,45,.45)';
+    ctx.beginPath(); ctx.arc(ARENA.x,ARENA.y,ARENA.r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(ARENA.x,ARENA.y,ARENA.r*.62,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,.4)'; ctx.font='900 22px Microsoft JhengHei'; ctx.textAlign='center';
+    ctx.fillText('戰鬥場', ARENA.x, ARENA.y+8);
+    ctx.restore();
+  }
+  function drawBase(team){
+    const k=kingdoms[team]; if(!k) return;
+    const c=COLORS[team]; const b=k.base;
+    ctx.save();
+    ctx.globalAlpha = k.alive ? 1 : .35;
+    // 領地光圈
+    ctx.fillStyle = hexAlpha(c.hex,.13);
+    ctx.beginPath(); ctx.arc(b.x,b.y,78,0,Math.PI*2); ctx.fill();
+    // 塔：塔的圖案，使用國家顏色
+    ctx.fillStyle=c.dark; ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=3;
     ctx.beginPath();
-    ctx.moveTo(18, 0);
-    ctx.lineTo(-8, -10);
-    ctx.lineTo(-4, 0);
-    ctx.lineTo(-8, 10);
-    ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(b.x-30,b.y+38); ctx.lineTo(b.x-24,b.y-12); ctx.lineTo(b.x-36,b.y-12); ctx.lineTo(b.x-36,b.y-34);
+    ctx.lineTo(b.x-16,b.y-24); ctx.lineTo(b.x,b.y-38); ctx.lineTo(b.x+16,b.y-24); ctx.lineTo(b.x+36,b.y-34);
+    ctx.lineTo(b.x+36,b.y-12); ctx.lineTo(b.x+24,b.y-12); ctx.lineTo(b.x+30,b.y+38); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle=c.hex; ctx.fillRect(b.x-18,b.y-8,36,44);
+    ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(b.x-7,b.y+12,14,24);
+    ctx.fillStyle='white'; ctx.font='900 14px Microsoft JhengHei'; ctx.textAlign='center';
+    ctx.fillText(c.name, b.x, b.y+61);
+    // HP bar
+    bar(b.x-48,b.y+70,96,9,k.towerHp/k.towerMax,c.hex);
+    if(team===playerTeam){
+      ctx.strokeStyle='white'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(b.x,b.y,90,0,Math.PI*2); ctx.stroke();
+    }
     ctx.restore();
   }
 
-  function drawPlots() {
-    for (const p of game.plots) {
+  function drawWildMonsters(){
+    wildMonsters.forEach(m => {
       ctx.save();
-      const hover = dist(game.mouse.x, game.mouse.y, p.x, p.y) < p.r + 5;
-      if (!p.unlocked) {
-        ctx.fillStyle = hover ? '#4f9a48' : '#397b35';
-        ctx.strokeStyle = '#245623';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(20,45,20,0.6)';
-        for (let i = 0; i < 12; i++) {
-          const a = i * Math.PI * 2 / 12;
-          ctx.fillRect(p.x + Math.cos(a) * 19 - 2, p.y + Math.sin(a) * 19 - 7, 4, 14);
-        }
-        ctx.fillStyle = '#fff6b2';
-        ctx.font = 'bold 14px "Microsoft YaHei"';
-        ctx.textAlign = 'center';
-        ctx.fillText('$' + rules.unlockGrassCost, p.x, p.y + 5);
+      ctx.translate(m.x,m.y);
+      ctx.fillStyle='#7fcf5b';
+      ctx.strokeStyle='rgba(0,0,0,.55)';
+      ctx.lineWidth=3;
+      ctx.beginPath();
+      ctx.arc(0,0,m.radius,0,Math.PI*2);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#1b2b18';
+      ctx.beginPath(); ctx.arc(5,-5,2.4,0,Math.PI*2); ctx.arc(5,5,2.4,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#d8ffd0'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(8,0); ctx.moveTo(0,-8); ctx.lineTo(0,8); ctx.stroke();
+      ctx.restore();
+      bar(m.x-20,m.y-30,40,5,m.hp/m.maxHp,'#9eff8f');
+    });
+  }
+
+  function drawUnits(){
+    const sorted = [...units].sort((a,b)=>a.y-b.y);
+    sorted.forEach(u => {
+      const c=COLORS[u.team];
+      ctx.save();
+      ctx.translate(u.x,u.y);
+      const ang = Math.atan2(u.vy,u.vx) || 0;
+      const scaleSize = u.type === 'tank' ? 1.35 : (u.type === 'giant' ? 1.55 : (u.type === 'shield' ? 1.24 : (u.type === 'cavalry' ? 1.18 : (u.type === 'superArcher' ? 1.13 : 1)))); 
+      if(u.type === 'cavalry') drawCavalry(c,ang,scaleSize);
+      else if(u.type === 'archer') drawArcher(c,ang,scaleSize,false);
+      else if(u.type === 'superArcher') drawArcher(c,ang,scaleSize,true);
+      else if(u.type === 'shield') drawShield(c,ang,scaleSize);
+      else if(u.type === 'giant') drawGiant(c,ang,scaleSize);
+      else if(u.type === 'tank') drawTank(c,ang,scaleSize);
+      else drawNormal(c,ang,scaleSize);
+      ctx.restore();
+      bar(u.x-16,u.y-28,32,5,u.hp/u.maxHp,c.hex);
+    });
+  }
+  function drawNormal(c,ang,s){
+    ctx.rotate(ang);
+    ctx.fillStyle=c.hex; ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,0,12*s,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(3,-4,2,0,Math.PI*2); ctx.arc(3,5,2,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#e7e0cd'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(6,-13); ctx.lineTo(22,-21); ctx.stroke();
+  }
+  function drawArcher(c,ang,s,superA){
+    ctx.rotate(ang);
+    ctx.fillStyle=superA ? '#fff6b4' : c.hex;
+    ctx.strokeStyle=c.dark; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,12*s,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(3,-4,2,0,Math.PI*2); ctx.arc(3,5,2,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#d6a64f'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(5,0,18,-Math.PI/2,Math.PI/2); ctx.stroke();
+    ctx.strokeStyle='#f6f2da'; ctx.beginPath(); ctx.moveTo(7,-17); ctx.lineTo(7,17); ctx.stroke();
+    if(superA){
+      ctx.strokeStyle=c.hex; ctx.lineWidth=2;
+      [-6,0,6].forEach(y=>{ctx.beginPath(); ctx.moveTo(10,y); ctx.lineTo(27,y); ctx.stroke();});
+    }
+  }
+  function drawShield(c,ang,s){
+    ctx.rotate(ang);
+    ctx.fillStyle=c.hex; ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,13*s,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    // 大盾牌
+    ctx.fillStyle='#cfc7ad'; ctx.strokeStyle=c.dark; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(12*s,-18*s); ctx.lineTo(29*s,-10*s); ctx.lineTo(29*s,10*s); ctx.lineTo(12*s,18*s); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(4,-5,2,0,Math.PI*2); ctx.arc(4,5,2,0,Math.PI*2); ctx.fill();
+    // 盾牌護衛不用劍，直接衝過去用盾牌撞人。
+    ctx.fillStyle='rgba(255,255,255,.65)'; ctx.beginPath(); ctx.arc(20*s,0,3*s,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawGiant(c,ang,s){
+    ctx.rotate(ang);
+    ctx.fillStyle=c.dark; ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.arc(0,0,18*s,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=c.hex; ctx.beginPath(); ctx.arc(0,0,12*s,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(5,-6,2.4*s,0,Math.PI*2); ctx.arc(5,6,2.4*s,0,Math.PI*2); ctx.fill();
+    // 巨人用大拳頭重擊，一下可以打掉 100 血。
+    ctx.fillStyle='#d8c08a'; ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(28*s,0,8*s,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='#d8c08a'; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(11*s,0); ctx.lineTo(24*s,0); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,25*s,0,Math.PI*2); ctx.stroke();
+  }
+
+  function drawTank(c,ang,s){
+    ctx.rotate(ang);
+    ctx.fillStyle=c.dark; ctx.strokeStyle='rgba(0,0,0,.65)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.roundRect(-20*s,-15*s,40*s,30*s,7*s); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=c.hex; ctx.beginPath(); ctx.roundRect(-12*s,-9*s,24*s,18*s,5*s); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='#d7d0b3'; ctx.lineWidth=7*s; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(8*s,0); ctx.lineTo(33*s,0); ctx.stroke();
+    ctx.fillStyle='#111';
+    [-12,12].forEach(y => { ctx.beginPath(); ctx.ellipse(-4*s,y*s,20*s,4*s,0,0,Math.PI*2); ctx.fill(); });
+    ctx.globalAlpha=.22; ctx.fillStyle='#ffe7a8'; ctx.beginPath(); ctx.arc(0,0,TYPE.tank.aoe*.18*s,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+  }
+
+  function drawCavalry(c,ang,s){
+    ctx.rotate(ang);
+    // 馬
+    ctx.fillStyle='#7b4a22'; ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.ellipse(0,0,22*s,12*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(16*s,-6*s,9*s,6*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    // 人：圓圈圈，有兩個小眼睛
+    ctx.fillStyle=c.hex; ctx.beginPath(); ctx.arc(-3*s,-1*s,11*s,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(2*s,-5*s,2,0,Math.PI*2); ctx.arc(2*s,3*s,2,0,Math.PI*2); ctx.fill();
+    // 矛
+    ctx.strokeStyle='#e6e1c8'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(4*s,-14*s); ctx.lineTo(34*s,-24*s); ctx.stroke();
+    ctx.fillStyle='#e6e1c8'; ctx.beginPath(); ctx.moveTo(38*s,-26*s); ctx.lineTo(29*s,-27*s); ctx.lineTo(34*s,-18*s); ctx.closePath(); ctx.fill();
+  }
+  function drawProjectiles(){
+    projectiles.forEach(p => {
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(Math.atan2(p.vy,p.vx));
+      if(p.type === 'siege'){
+        ctx.fillStyle='#ffb238'; ctx.strokeStyle=COLORS[p.team].hex; ctx.lineWidth=4;
+        ctx.beginPath(); ctx.arc(0,0,p.radius || 13,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.globalAlpha=.45; ctx.fillStyle='#ffdd6b'; ctx.beginPath(); ctx.arc(-6,0,22,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
       } else {
-        ctx.fillStyle = p.tower ? 'rgba(90,70,50,0.2)' : (hover ? '#9a7745' : '#7d5f38');
-        ctx.strokeStyle = hover ? '#f6c453' : '#3d2b19';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        if (!p.tower) {
-          ctx.fillStyle = '#fff2c0';
-          ctx.font = 'bold 13px "Microsoft YaHei"';
-          ctx.textAlign = 'center';
-          ctx.fillText('建炮台', p.x, p.y - 5);
-          ctx.fillText('$' + rules.towerCost, p.x, p.y + 15);
-        }
-      }
-      if (game.selectedPlot === p) {
-        ctx.strokeStyle = '#f6e27a';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r + 7, 0, Math.PI * 2);
-        ctx.stroke();
+        ctx.strokeStyle=COLORS[p.team].hex; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(8,0); ctx.stroke();
+        ctx.fillStyle='#f4ead2'; ctx.beginPath(); ctx.moveTo(11,0); ctx.lineTo(4,-4); ctx.lineTo(4,4); ctx.closePath(); ctx.fill();
       }
       ctx.restore();
+    });
+  }
+  function drawParticles(){
+    particles.forEach(p => {
+      ctx.globalAlpha = Math.max(0,p.life/p.max);
+      ctx.fillStyle=p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+      ctx.globalAlpha=1;
+    });
+  }
+  function drawFloating(){
+    floatingTexts.forEach(f => {
+      ctx.globalAlpha=Math.max(0,f.life/f.max);
+      ctx.fillStyle=f.color; ctx.font='900 16px Microsoft JhengHei'; ctx.textAlign='center'; ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=4;
+      ctx.strokeText(f.text,f.x,f.y); ctx.fillText(f.text,f.x,f.y);
+      ctx.globalAlpha=1;
+    });
+  }
+
+  function updateParticles(dt){
+    particles.forEach(p=>{p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; p.r*=.985;});
+    particles=particles.filter(p=>p.life>0);
+  }
+  function updateFloating(dt){
+    floatingTexts.forEach(f=>{f.y-=24*dt; f.life-=dt;});
+    floatingTexts=floatingTexts.filter(f=>f.life>0);
+  }
+  function burst(x,y,color,n=14){
+    for(let i=0;i<n;i++){
+      const a=Math.random()*Math.PI*2, sp=40+Math.random()*150;
+      particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:2+Math.random()*4,life:.35+Math.random()*.5,max:.85,color});
     }
   }
+  function spark(x,y,color){ burst(x,y,color,4); }
+  function slash(a,b){
+    particles.push({x:(a.x+b.x)/2,y:(a.y+b.y)/2,vx:0,vy:0,r:7,life:.18,max:.18,color:'#fff'});
+  }
+  function flashAt(x,y,color){ burst(x,y,color,22); }
+  function floatingText(x,y,text,color){ floatingTexts.push({x,y,text,color,life:1.15,max:1.15}); }
 
-  function drawCastle(x, y, w, h, hp, maxHp, intro = false) {
-    ctx.save();
-    const scaleX = w / 132;
-    const scaleY = h / 280;
-    ctx.translate(x, y);
-    ctx.scale(scaleX, scaleY);
-
-    // wall shadow
-    ctx.fillStyle = '#2b2f34';
-    ctx.fillRect(8, 60, 116, 202);
-    ctx.fillStyle = '#5b616a';
-    ctx.fillRect(0, 72, 132, 190);
-    ctx.fillStyle = '#737b86';
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 5; c++) {
-        ctx.fillRect(8 + c * 25 + (r % 2) * 10, 82 + r * 22, 18, 12);
-      }
-    }
-    // towers
-    ctx.fillStyle = '#4f5661';
-    ctx.fillRect(0, 36, 34, 226);
-    ctx.fillRect(98, 36, 34, 226);
-    ctx.fillStyle = '#6c7580';
-    ctx.fillRect(-5, 28, 44, 22);
-    ctx.fillRect(93, 28, 44, 22);
-    for (let i = 0; i < 3; i++) {
-      ctx.fillRect(i * 14, 10, 10, 28);
-      ctx.fillRect(98 + i * 14, 10, 10, 28);
-    }
-    // gate
-    ctx.fillStyle = '#2b1d15';
-    ctx.fillRect(47, 178, 38, 84);
-    ctx.fillStyle = '#3e2819';
-    ctx.beginPath();
-    ctx.arc(66, 179, 19, Math.PI, 0);
-    ctx.fill();
-    ctx.fillStyle = '#1c1410';
-    ctx.fillRect(63, 182, 6, 80);
-
-    // cracks for intro/game damage
-    const damageRatio = 1 - hp / maxHp;
-    ctx.strokeStyle = intro ? '#20242a' : 'rgba(50,35,25,0.55)';
-    ctx.lineWidth = 3;
-    if (intro || damageRatio > 0.15) {
-      ctx.beginPath();
-      ctx.moveTo(82, 95); ctx.lineTo(72, 120); ctx.lineTo(88, 147); ctx.lineTo(79, 170);
-      ctx.stroke();
-    }
-    if (damageRatio > 0.45) {
-      ctx.beginPath();
-      ctx.moveTo(30, 130); ctx.lineTo(42, 150); ctx.lineTo(35, 186); ctx.stroke();
-    }
-
-    ctx.restore();
-
-    if (!intro) {
-      drawHealthBar(x + 8, y - 28, w - 16, 14, hp, maxHp, '城堡 HP ' + Math.ceil(hp) + '/' + maxHp, '#e45d5d');
-    }
+  function bar(x,y,w,h,pct,color){
+    pct = clamp(pct,0,1);
+    ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(x,y,w,h);
+    ctx.fillStyle=color; ctx.fillRect(x,y,w*pct,h);
+    ctx.strokeStyle='rgba(255,255,255,.42)'; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
+  }
+  function message(text){
+    msgEl.textContent = text;
+    msgEl.classList.add('show');
+    clearTimeout(message._t);
+    message._t = setTimeout(()=>msgEl.classList.remove('show'), 1700);
+  }
+  function pointToward(x1,y1,x2,y2,step){
+    const dx = x2-x1, dy = y2-y1;
+    const d = Math.max(1, Math.hypot(dx,dy));
+    return {x:x1 + dx/d*step, y:y1 + dy/d*step};
+  }
+  function dist(x1,y1,x2,y2){ return Math.hypot(x2-x1,y2-y1); }
+  function dist2(x1,y1,x2,y2){ const dx=x2-x1, dy=y2-y1; return dx*dx+dy*dy; }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+  function hexAlpha(hex,a){
+    const h = hex.replace('#','');
+    const r=parseInt(h.substring(0,2),16), g=parseInt(h.substring(2,4),16), b=parseInt(h.substring(4,6),16);
+    return `rgba(${r},${g},${b},${a})`;
   }
 
-  function drawBuildPhaseBanner() {
-    ctx.save();
-    ctx.fillStyle = 'rgba(255, 238, 166, 0.15)';
-    ctx.strokeStyle = 'rgba(255, 241, 177, 0.75)';
-    ctx.lineWidth = 3;
-    roundRect(320, 100, 360, 64, 16, true, true);
-    ctx.fillStyle = '#fff4b8';
-    ctx.font = 'bold 22px "Microsoft YaHei"';
-    ctx.textAlign = 'center';
-    ctx.fillText('没有白天：黑夜结束会直接进入下一天', 500, 127);
-    ctx.font = '16px "Microsoft YaHei"';
-    ctx.fillText('剩余 ' + formatTime(game.phaseTimer) + '，下一天黑夜会直接开始', 500, 151);
-    ctx.restore();
-  }
-
-  function drawGhostWarning() {
-    if (isUltimateBossDay(game.day) || hasUltimateBossAlive()) return;
-    if (!game.wave || game.wave.finished || game.phase !== 'night') return;
-    const remaining = game.wave.total - game.wave.spawned;
-    const spawn = path[0];
-    const nextIn = Math.max(0, game.wave.spawnTimer || 0);
-    const warning = nextIn > 0 && nextIn <= (game.wave.warningDuration || 1.7);
-    const pulse = 1 + Math.sin(game.time * 5) * 0.08;
-
-    ctx.save();
-    ctx.globalAlpha = warning ? 0.78 + Math.sin(game.time * 8) * 0.18 : 0.45 + Math.sin(game.time * 4) * 0.12;
-
-    // 入口的幽灵圈圈：告诉玩家僵尸会从这里沿路慢慢走过来。
-    ctx.translate(spawn.x, spawn.y - 72);
-    ctx.scale(pulse, pulse);
-    ctx.strokeStyle = warning ? '#fff8b8' : '#dff7ff';
-    ctx.fillStyle = warning ? 'rgba(255, 245, 140, 0.16)' : 'rgba(170, 230, 255, 0.16)';
-    ctx.lineWidth = warning ? 5 : 4;
-    ctx.beginPath();
-    ctx.arc(0, 0, 32, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    drawGhostIcon(0, 0, 0.82);
-    ctx.restore();
-
-    // 指向路线的箭头。
-    const p1 = getPointOnPath(22 + Math.sin(game.time * 2) * 8);
-    const p2 = getPointOnPath(88 + Math.sin(game.time * 2) * 8);
-    drawBigGhostArrow(p1.x, p1.y - 42, p2.x, p2.y - 42, warning);
-
-    // 五个小幽灵点，表示这一波最多 5 只。
-    for (let i = 0; i < game.wave.total; i++) {
-      const active = i >= game.wave.spawned;
-      const gx = spawn.x - 56 + i * 28;
-      const gy = spawn.y - 132;
-      ctx.save();
-      ctx.globalAlpha = active ? 0.82 : 0.22;
-      ctx.fillStyle = active ? 'rgba(225,245,255,0.86)' : 'rgba(225,245,255,0.28)';
-      ctx.strokeStyle = active ? '#dff7ff' : 'rgba(223,247,255,0.35)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(gx, gy + Math.sin(game.time * 3 + i) * 2, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    ctx.fillStyle = '#e8fbff';
-    ctx.font = 'bold 17px "Microsoft YaHei"';
-    ctx.textAlign = 'center';
-    ctx.fillText('幽灵预告：僵尸入口', spawn.x, spawn.y - 168);
-    ctx.fillText('第 ' + game.day + ' 天 · 第 ' + (game.waveNumber + 1) + ' 波：5 只，剩余 ' + remaining + ' 只', spawn.x, spawn.y - 24);
-    if (warning && remaining > 0) {
-      ctx.fillStyle = '#fff4a8';
-      ctx.font = 'bold 16px "Microsoft YaHei"';
-      ctx.fillText('下一只马上出现！', spawn.x, spawn.y - 48);
-    }
-  }
-
-  function drawBigGhostArrow(x1, y1, x2, y2, warning) {
-    const a = Math.atan2(y2 - y1, x2 - x1);
-    const len = dist(x1, y1, x2, y2);
-    ctx.save();
-    ctx.translate(x1, y1);
-    ctx.rotate(a);
-    ctx.strokeStyle = warning ? 'rgba(255,248,184,0.95)' : 'rgba(216,247,255,0.62)';
-    ctx.fillStyle = warning ? 'rgba(255,248,184,0.95)' : 'rgba(216,247,255,0.62)';
-    ctx.lineWidth = warning ? 6 : 4;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(len, 0);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(len + 14, 0);
-    ctx.lineTo(len - 8, -11);
-    ctx.lineTo(len - 4, 0);
-    ctx.lineTo(len - 8, 11);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function drawGhostIcon(x, y, s) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(s, s);
-    ctx.fillStyle = 'rgba(225,245,255,0.85)';
-    ctx.beginPath();
-    ctx.arc(0, -4, 23, Math.PI, 0);
-    ctx.lineTo(23, 22);
-    ctx.lineTo(12, 14);
-    ctx.lineTo(4, 22);
-    ctx.lineTo(-5, 14);
-    ctx.lineTo(-15, 22);
-    ctx.lineTo(-23, 14);
-    ctx.lineTo(-23, -4);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#1b2d36';
-    ctx.fillRect(-11, -5, 6, 8);
-    ctx.fillRect(7, -5, 6, 8);
-    ctx.restore();
-  }
-
-  function drawBossAttacks() {
-    ctx.save();
-    for (const a of game.bossAttacks) {
-      const warning = !a.applied;
-      const p = warning ? clamp(a.timer / a.maxTimer, 0, 1) : 0;
-      const pulse = 1 + Math.sin(game.time * 18) * 0.04;
-      ctx.globalAlpha = warning ? 0.35 + (1 - p) * 0.35 : 0.22;
-      ctx.fillStyle = warning ? 'rgba(255, 50, 50, 0.38)' : 'rgba(255, 150, 80, 0.26)';
-      ctx.strokeStyle = warning ? '#ff5a5a' : '#ffd1a1';
-      ctx.lineWidth = warning ? 5 : 3;
-      ctx.beginPath();
-      ctx.arc(a.x, a.y, a.r * pulse, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.globalAlpha = 0.8;
-      ctx.strokeStyle = '#ffb3b3';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(a.x - 14, a.y - a.r + 18);
-      ctx.lineTo(a.x + 14, a.y + a.r - 18);
-      ctx.moveTo(a.x + 14, a.y - a.r + 18);
-      ctx.lineTo(a.x - 14, a.y + a.r - 18);
-      ctx.stroke();
-    }
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
-
-  function drawZombieSoul(x, y, timer) {
-    const p = clamp(1 - timer / 0.62, 0, 1);
-    const pulse = 1 + Math.sin(game.time * 16) * 0.08;
-    ctx.save();
-    ctx.globalAlpha = 0.82;
-    ctx.translate(x, y);
-    ctx.scale(pulse, pulse);
-    ctx.strokeStyle = '#dff7ff';
-    ctx.fillStyle = 'rgba(225,245,255,0.16)';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(0, 0, 34, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    drawGhostIcon(0, 0, 0.72 + p * 0.2);
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = p;
-    drawBlockZombie(x, y + 22, 0.54 + p * 0.18, { lookX: game.castle.x, lookY: game.castle.y + game.castle.h / 2 });
-    ctx.restore();
-  }
-
-  function drawZombieActor(z) {
-    const isBoss = z.colorMode === 'ultimate';
-    if (z.materializeTimer > 0) {
-      drawZombieSoul(z.x, z.y - 22, z.materializeTimer);
-    } else if (isBoss) {
-      drawUltimateBoss(z);
-    } else {
-      drawBlockZombie(z.x, z.y, 0.72, { lookX: game.castle.x, lookY: game.castle.y + game.castle.h / 2, slow: z.slowTimer > 0, burn: z.burnTimer > 0, charging: z.chargeTimer > 0, fast: z.colorMode === 'fast', reaper: z.colorMode === 'reaper', reflect: z.colorMode === 'reflect' });
-    }
-
-    if (z.colorMode === 'fast') drawEnemyLabel('跑步者', z.x, z.y - 82, '#ffd18a');
-    if (z.colorMode === 'reaper') drawEnemyLabel('死神 · 3秒传送', z.x, z.y - 82, '#d9b7ff');
-    if (isBoss) {
-      const cd = Math.max(0, Math.ceil(z.bossAttackTimer || 0));
-      drawEnemyLabel('终极魔王 · 三叉戟 ' + cd + '秒', z.x, z.y - 116, '#ff9a9a');
-    }
-
-    const barW = isBoss ? 104 : 58;
-    const barY = isBoss ? z.y - 100 : z.y - 66;
-    const barColor = isBoss ? '#ff5a5a' : (z.colorMode === 'reflect' ? '#57e1ff' : (z.colorMode === 'reaper' ? '#b58cff' : (z.colorMode === 'fast' ? '#ff9d4d' : '#e45d5d')));
-    drawHealthBar(z.x - barW / 2, barY, barW, 8, z.hp, z.maxHp, '', barColor);
-    ctx.fillStyle = '#f7f0d8';
-    ctx.font = isBoss ? 'bold 12px "Microsoft YaHei"' : '11px "Microsoft YaHei"';
-    ctx.textAlign = 'center';
-    ctx.fillText(Math.ceil(z.hp) + '/' + z.maxHp, z.x, barY - 4);
-  }
-
-  function drawEnemyLabel(text, x, y, color) {
-    ctx.fillStyle = color;
-    ctx.font = 'bold 11px "Microsoft YaHei"';
-    ctx.textAlign = 'center';
-    ctx.fillText(text, x, y);
-  }
-
-  function drawBlockZombie(x, y, s = 1, opts = {}) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(s, s);
-
-    const bob = Math.sin(game.time * 7 + x * 0.01) * 2;
-    ctx.translate(0, bob);
-
-    // shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.32)';
-    ctx.fillRect(-28, 35, 56, 10);
-
-    const skin = opts.reaper ? '#cdb6ff' : (opts.reflect ? '#74e7ff' : (opts.slow ? '#7fc6bd' : (opts.fast ? '#76d982' : '#5fbf75')));
-    const skinDark = opts.reaper ? '#7c5cc4' : (opts.reflect ? '#249cb8' : (opts.slow ? '#579f9a' : (opts.fast ? '#459c55' : '#3d8e52')));
-    const shirt = opts.reaper ? '#29203f' : (opts.reflect ? '#1e4a5d' : (opts.burn ? '#7b4a2e' : (opts.fast ? '#8b3f3f' : '#2d6f7e')));
-    const pants = '#263a78';
-
-    // legs - 走路时两条腿会轻微摆动。
-    const runKick = Math.sin(game.time * 7 + x * 0.03) * 3;
-    ctx.fillStyle = pants;
-    ctx.fillRect(-18, 18 + Math.max(0, runKick), 14, 30);
-    ctx.fillRect(4, 18 + Math.max(0, -runKick), 14, 30);
-    ctx.fillStyle = '#1c2b5a';
-    ctx.fillRect(-18, 42, 14, 6);
-    ctx.fillRect(4, 42, 14, 6);
-
-    // body
-    ctx.fillStyle = shirt;
-    ctx.fillRect(-24, -28, 48, 50);
-    ctx.fillStyle = '#1c4c59';
-    ctx.fillRect(-24, 12, 48, 10);
-
-    // arms out
-    const armLift = Math.sin(game.time * 6 + x * 0.02) * 2;
-    ctx.fillStyle = skin;
-    ctx.fillRect(-48, -24 + armLift, 22, 14);
-    ctx.fillRect(26, -24 - armLift, 22, 14);
-    ctx.fillStyle = skinDark;
-    ctx.fillRect(-48, -10 + armLift, 22, 10);
-    ctx.fillRect(26, -10 - armLift, 22, 10);
-
-    // head
-    ctx.fillStyle = skin;
-    ctx.fillRect(-24, -68, 48, 42);
-    ctx.fillStyle = skinDark;
-    ctx.fillRect(-24, -34, 48, 8);
-
-    // eyes look toward target
-    let eyeShiftX = 0;
-    if (opts.lookX !== undefined) eyeShiftX = clamp((opts.lookX - x) / 250, -3, 3);
-    ctx.fillStyle = '#111827';
-    ctx.fillRect(-13 + eyeShiftX, -55, 8, 8);
-    ctx.fillRect(8 + eyeShiftX, -55, 8, 8);
-    ctx.fillStyle = '#1b3d24';
-    ctx.fillRect(-10, -40, 20, 5);
-
-    // pixel highlights
-    ctx.fillStyle = 'rgba(255,255,255,0.10)';
-    ctx.fillRect(-20, -64, 10, 8);
-    ctx.fillRect(-18, -24, 12, 32);
-
-    if (opts.burn) {
-      ctx.fillStyle = 'rgba(255,100,30,0.75)';
-      ctx.fillRect(-30 + rand(-1,1), -40 + rand(-1,1), 8, 22);
-      ctx.fillRect(22 + rand(-1,1), -18 + rand(-1,1), 7, 20);
-    }
-
-    if (opts.reflect) {
-      ctx.strokeStyle = 'rgba(135,246,255,0.8)';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(0, -18, 54 + Math.sin(game.time * 6) * 3, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(135,246,255,0.18)';
-      ctx.fillRect(-31, -75, 62, 126);
-      ctx.fillStyle = '#d9fbff';
-      ctx.font = 'bold 16px "Microsoft YaHei"';
-      ctx.textAlign = 'center';
-      ctx.fillText('⚡', 0, -82);
-    }
-
-    ctx.restore();
-  }
-
-  function drawUltimateBoss(z) {
-    const x = z.x, y = z.y;
-    ctx.save();
-    ctx.translate(x, y);
-    const bob = Math.sin(game.time * 3 + x * 0.01) * 1.4;
-    ctx.translate(0, bob);
-
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(-44, 44, 88, 13);
-
-    ctx.fillStyle = '#2b213d';
-    ctx.fillRect(-26, 16, 20, 42);
-    ctx.fillRect(6, 16, 20, 42);
-    ctx.fillStyle = '#171220';
-    ctx.fillRect(-30, 50, 28, 8);
-    ctx.fillRect(2, 50, 28, 8);
-
-    ctx.fillStyle = '#441d2a';
-    ctx.fillRect(-36, -42, 72, 64);
-    ctx.fillStyle = '#7b2632';
-    ctx.fillRect(-30, -34, 60, 16);
-    ctx.fillStyle = '#211425';
-    ctx.fillRect(-36, 8, 72, 14);
-    ctx.fillStyle = '#ffcc66';
-    ctx.fillRect(-7, -33, 14, 48);
-
-    ctx.fillStyle = '#7b2632';
-    ctx.fillRect(-62, -34, 24, 18);
-    ctx.fillRect(38, -34, 24, 18);
-    ctx.fillStyle = '#3b1020';
-    ctx.fillRect(-66, -17, 22, 17);
-    ctx.fillRect(44, -17, 22, 17);
-
-    ctx.fillStyle = '#6c2030';
-    ctx.fillRect(-28, -88, 56, 48);
-    ctx.fillStyle = '#3b1020';
-    ctx.fillRect(-28, -48, 56, 8);
-
-    ctx.fillStyle = '#e8dcc2';
-    ctx.beginPath();
-    ctx.moveTo(-25, -86); ctx.lineTo(-52, -110); ctx.lineTo(-34, -78); ctx.closePath();
-    ctx.moveTo(25, -86); ctx.lineTo(52, -110); ctx.lineTo(34, -78); ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#b99a6a';
-    ctx.fillRect(-43, -97, 8, 10);
-    ctx.fillRect(35, -97, 8, 10);
-
-    ctx.fillStyle = '#ffe36e';
-    ctx.fillRect(-17, -70, 10, 8);
-    ctx.fillRect(7, -70, 10, 8);
-    ctx.fillStyle = '#16090c';
-    ctx.fillRect(-15, -56, 30, 6);
-
-    ctx.strokeStyle = '#e9f3ff';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(62, -96);
-    ctx.lineTo(58, 42);
-    ctx.stroke();
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(42, -94); ctx.lineTo(62, -116); ctx.lineTo(82, -94);
-    ctx.moveTo(62, -116); ctx.lineTo(62, -82);
-    ctx.moveTo(42, -94); ctx.lineTo(42, -74);
-    ctx.moveTo(82, -94); ctx.lineTo(82, -74);
-    ctx.stroke();
-
-    if (z.burnTimer > 0) {
-      ctx.fillStyle = 'rgba(255,90,30,0.72)';
-      ctx.fillRect(-44 + rand(-1,1), -50, 10, 28);
-      ctx.fillRect(34 + rand(-1,1), -28, 10, 24);
-    }
-
-    ctx.restore();
-  }
-
-  function drawTower(t) {
-    ctx.save();
-    ctx.translate(t.x, t.y);
-
-    // base
-    ctx.fillStyle = '#3b3022';
-    ctx.fillRect(-24, 10, 48, 22);
-    ctx.fillStyle = '#675039';
-    ctx.fillRect(-18, -10, 36, 26);
-    ctx.fillStyle = '#82705a';
-    ctx.fillRect(-13, -34, 26, 28);
-
-    // barrel
-    const target = nearestZombie(t.x, t.y, t.range);
-    let angle = -Math.PI / 2;
-    if (target) angle = Math.atan2(target.y - t.y, target.x - t.x);
-    ctx.save();
-    ctx.rotate(angle);
-    ctx.fillStyle = elementColor(t.element);
-    ctx.fillRect(0, -5, 36, 10);
-    ctx.fillStyle = '#1d2226';
-    ctx.fillRect(29, -7, 10, 14);
-    ctx.restore();
-
-    ctx.fillStyle = '#1d2226';
-    ctx.fillRect(-9, -43, 18, 12);
-    ctx.fillStyle = '#e7d27a';
-    ctx.font = 'bold 11px "Microsoft YaHei"';
-    ctx.textAlign = 'center';
-    ctx.fillText(t.element === '普通' ? '普通' : t.element, 0, 48);
-    ctx.fillText('Lv.' + t.level, 0, 63);
-
-    ctx.restore();
-
-    // HP and gold upgrade bar
-    drawHealthBar(t.x - 30, t.y - 58, 60, 7, t.hp, t.maxHp, '', '#7ed36a');
-    drawGoldBar(t.x - 30, t.y + 70, 60, 8, t.kills, rules.towerKillsForUpgrade, t.readyUpgrade);
-
-    if (game.selectedTower === t) {
-      ctx.strokeStyle = t.readyUpgrade ? '#ffe066' : 'rgba(255,255,255,0.5)';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(t.x, t.y, 43 + Math.sin(game.time * 5) * (t.readyUpgrade ? 3 : 0), 0, Math.PI * 2);
-      ctx.stroke();
-    }
-  }
-
-  function drawGoldBar(x, y, w, h, value, max, ready) {
-    ctx.fillStyle = '#2a2418';
-    roundRect(x, y, w, h, 4, true, false);
-    ctx.fillStyle = ready ? '#fff176' : '#d4a22e';
-    roundRect(x, y, w * clamp(value / max, 0, 1), h, 4, true, false);
-    ctx.strokeStyle = ready ? '#fff8b8' : '#73551b';
-    ctx.lineWidth = 2;
-    roundRect(x, y, w, h, 4, false, true);
-    if (ready) {
-      ctx.fillStyle = '#fff8b8';
-      ctx.font = 'bold 11px "Microsoft YaHei"';
-      ctx.textAlign = 'center';
-      ctx.fillText('可升级', x + w / 2, y - 4);
-    }
-  }
-
-  function drawGuard(g) {
-    ctx.save();
-    ctx.translate(g.x, g.y);
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.fillRect(-20, 24, 40, 8);
-    // legs/body/head
-    ctx.fillStyle = '#374151';
-    ctx.fillRect(-12, 5, 9, 24);
-    ctx.fillRect(4, 5, 9, 24);
-    ctx.fillStyle = '#8b5e3c';
-    ctx.fillRect(-16, -24, 32, 34);
-    ctx.fillStyle = '#d9a066';
-    ctx.fillRect(-13, -52, 26, 26);
-    ctx.fillStyle = '#2f241d';
-    ctx.fillRect(-15, -58, 30, 10);
-    ctx.fillStyle = '#111827';
-    ctx.fillRect(-8, -43, 5, 5);
-    ctx.fillRect(5, -43, 5, 5);
-    // sword
-    ctx.strokeStyle = '#d9e4ef';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(16, -18);
-    ctx.lineTo(42, -39);
-    ctx.stroke();
-    ctx.strokeStyle = '#6b4b2f';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(11, -13);
-    ctx.lineTo(22, -23);
-    ctx.stroke();
-    ctx.restore();
-
-    drawHealthBar(g.x - 28, g.y - 72, 56, 8, g.hp, g.maxHp, '', '#65c7ff');
-    ctx.fillStyle = '#e5f5ff';
-    ctx.font = '11px "Microsoft YaHei"';
-    ctx.textAlign = 'center';
-    ctx.fillText('护卫 ' + Math.ceil(g.hp) + '/' + g.maxHp, g.x, g.y - 78);
-  }
-
-  function drawBullet(b) {
-    ctx.save();
-    ctx.fillStyle = elementColor(b.kind);
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.kind === '普通' ? 3 : 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 0.35;
-    ctx.strokeStyle = elementColor(b.kind);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    const a = Math.atan2(b.ty - b.y, b.tx - b.x);
-    ctx.lineTo(b.x - Math.cos(a) * 14, b.y - Math.sin(a) * 14);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawGameUI() {
-    game.uiButtons.length = 0;
-    game.upgradeButtons.length = 0;
-
-    ctx.fillStyle = 'rgba(12,17,23,0.88)';
-    ctx.fillRect(0, 0, W, 78);
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-    ctx.beginPath();
-    ctx.moveTo(0, 78); ctx.lineTo(W, 78); ctx.stroke();
-
-    drawPixelText('僵尸生存', 24, 32, 23, '#f5f0d0', 'left');
-    ctx.fillStyle = '#f6c453';
-    ctx.font = 'bold 20px "Microsoft YaHei"';
-    ctx.textAlign = 'left';
-    ctx.fillText('DAY ' + game.day, 24, 60);
-
-    const phaseName = '黑夜战斗';
-    drawHudBox(152, 13, 96, 50, '金币', '$' + game.money, '#f6c453');
-    drawHudBox(260, 13, 146, 50, '城堡', Math.ceil(game.castle.hp) + '/' + game.castle.maxHp, '#ff8a8a');
-    drawHudBox(418, 13, 138, 50, phaseName, formatTime(game.phaseTimer), '#b5d4ff');
-    drawHudBox(568, 13, 72, 50, '波数', game.wave ? ((game.waveNumber + 1) + '波') : '-', '#a8ffb2');
-
-    const btn = {
-      x: 650, y: 16, w: 152, h: 46,
-      onClick: summonGuard
-    };
-    game.uiButtons.push(btn);
-    drawButton(btn.x, btn.y, btn.w, btn.h, '召唤护卫 $' + rules.guardCost + ' (G)', '#3d6e88', '#e9fbff', false);
-
-    const helpBtn = {
-      x: 816, y: 16, w: 160, h: 46,
-      onClick: () => {
-        game.message = '玩法：点击草丛买开；点击开放地块建普通炮台；选中炮台可花 $500 强化；炮台击倒 10 只僵尸后金条亮起，可免费选四属性升级。';
-        game.messageTimer = 6;
-      }
-    };
-    game.uiButtons.push(helpBtn);
-    drawButton(helpBtn.x, helpBtn.y, helpBtn.w, helpBtn.h, '说明', '#6e5b3d', '#fff4cc', false);
-
-    drawBottomInfoPanel();
-    drawSelectionPanel();
-  }
-
-  function drawHudBox(x, y, w, h, label, value, color) {
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    roundRect(x, y, w, h, 10, true, false);
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    roundRect(x + 2, y + 2, w - 4, h - 4, 8, true, false);
-    ctx.fillStyle = '#bfc9d5';
-    ctx.font = '12px "Microsoft YaHei"';
-    ctx.textAlign = 'left';
-    ctx.fillText(label, x + 12, y + 18);
-    ctx.fillStyle = color;
-    ctx.font = 'bold 19px "Microsoft YaHei"';
-    ctx.fillText(value, x + 12, y + 42);
-  }
-
-  function drawBottomInfoPanel() {
-    const panelY = 528;
-    ctx.fillStyle = 'rgba(9,12,16,0.78)';
-    roundRect(14, panelY, 972, 78, 14, true, false);
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    roundRect(14, panelY, 972, 78, 14, false, true);
-
-    ctx.fillStyle = '#f4f0dc';
-    ctx.font = '15px "Microsoft YaHei"';
-    ctx.textAlign = 'left';
-    const msg = game.message || '目标：不要让城堡垮掉。每个黑夜 1 分钟持续出波，每波 5 只；没有白天，时间到直接进入下一天。';
-    wrapText(msg, 32, panelY + 28, 590, 20);
-
-    ctx.fillStyle = '#a7d5a5';
-    ctx.font = '13px "Microsoft YaHei"';
-    ctx.fillText('规则：初始金币 $300；普通炮台 $100；选中炮台可花 $500 强化；第二天跑步者；第三天死神 1000 HP，会传送。', 32, panelY + 64);
-  }
-
-  function drawSelectionPanel() {
-    const x = 650;
-    const y = 530;
-    const w = 318;
-    const h = 72;
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    roundRect(x, y, w, h, 12, true, false);
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    roundRect(x, y, w, h, 12, false, true);
-
-    ctx.textAlign = 'left';
-    if (game.selectedTower) {
-      const t = game.selectedTower;
-      ctx.fillStyle = '#f6e2a0';
-      ctx.font = 'bold 15px "Microsoft YaHei"';
-      ctx.fillText('已选炮台：' + t.element + ' Lv.' + t.level, x + 12, y + 20);
-      ctx.fillStyle = '#d7dfef';
-      ctx.font = '12px "Microsoft YaHei"';
-      ctx.fillText('HP ' + Math.ceil(t.hp) + '/' + t.maxHp + '  伤害 ' + t.damage + '  强化Lv.' + t.paidLevel + '/' + rules.towerPaidUpgradeMax, x + 12, y + 40);
-      ctx.fillText('升级金条：' + t.kills + '/' + rules.towerKillsForUpgrade + '  总击倒 ' + t.totalKills, x + 12, y + 58);
-      if (!t.readyUpgrade) drawPaidUpgradeButton(x + 202, y + 19, t);
-      if (t.readyUpgrade) drawUpgradeChoices(x + 150, y + 12, t);
-    } else if (game.selectedPlot) {
-      const p = game.selectedPlot;
-      ctx.fillStyle = '#d9ffd0';
-      ctx.font = 'bold 15px "Microsoft YaHei"';
-      ctx.fillText(p.unlocked ? '已开放地块' : '草丛地块', x + 12, y + 24);
-      ctx.fillStyle = '#d7dfef';
-      ctx.font = '12px "Microsoft YaHei"';
-      ctx.fillText(p.unlocked ? '点击可建普通炮台 $100' : '点击买开草丛 $20', x + 12, y + 48);
-    } else {
-      ctx.fillStyle = '#d7dfef';
-      ctx.font = '13px "Microsoft YaHei"';
-      ctx.fillText('操作提示：', x + 12, y + 23);
-      ctx.fillText('1. 点击草丛买地', x + 12, y + 43);
-      ctx.fillText('2. 点击开放地块建炮台', x + 12, y + 61);
-    }
-  }
-
-  function drawPaidUpgradeButton(x, y, tower) {
-    const maxed = tower.paidLevel >= rules.towerPaidUpgradeMax;
-    const affordable = game.money >= rules.towerPaidUpgradeCost;
-    const btn = {
-      x, y, w: 96, h: 34,
-      onClick: () => paidUpgradeTower(tower)
-    };
-    game.upgradeButtons.push(btn);
-    let bg = maxed ? '#3b3b3b' : (affordable ? '#8a6420' : '#58442b');
-    drawButton(x, y, 96, 34, maxed ? '强化满级' : '强化 $500', bg, '#fff2bf', false);
-  }
-
-  function drawUpgradeChoices(x, y, tower) {
-    const opts = [
-      { name: '雷射', icon: '⚡', color: '#f7f27a' },
-      { name: '火焰', icon: '🔥', color: '#ff8a3d' },
-      { name: '寒冰', icon: '❄', color: '#8ad8ff' },
-      { name: '草地', icon: '🌿', color: '#79d66b' }
-    ];
-    for (let i = 0; i < opts.length; i++) {
-      const o = opts[i];
-      const bx = x + i * 40;
-      const by = y;
-      const btn = { x: bx, y: by, w: 34, h: 34, onClick: () => upgradeTower(tower, o.name) };
-      game.upgradeButtons.push(btn);
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      roundRect(bx, by, 34, 34, 8, true, false);
-      ctx.strokeStyle = o.color;
-      ctx.lineWidth = 2;
-      roundRect(bx, by, 34, 34, 8, false, true);
-      ctx.fillStyle = o.color;
-      ctx.font = '20px "Segoe UI Emoji", "Microsoft YaHei"';
-      ctx.textAlign = 'center';
-      ctx.fillText(o.icon, bx + 17, by + 24);
-      ctx.fillStyle = '#fff6d0';
-      ctx.font = '10px "Microsoft YaHei"';
-      ctx.fillText(o.name, bx + 17, by + 50);
-    }
-  }
-
-  function drawEndOverlay(win) {
-    ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.72)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = win ? '#f6c453' : '#ff7777';
-    drawPixelText(win ? '第一天通关！' : '城堡倒塌', 500, 245, 54, win ? '#f6c453' : '#ff7777', 'center');
-    ctx.fillStyle = '#f4f0dc';
-    ctx.font = '20px "Microsoft YaHei"';
-    ctx.textAlign = 'center';
-    ctx.fillText(win ? '你守住了这一天。下一天会继续变难。' : '僵尸突破城墙，生存失败。', 500, 305);
-    ctx.fillText('最后金币：$' + game.money + '　城堡血量：' + Math.ceil(game.castle.hp) + '/' + game.castle.maxHp, 500, 338);
-    drawButton(385, 448, 230, 62, '回主页面', '#5e8f47', '#eafbd2', true);
-    ctx.restore();
-  }
-
-  function drawButton(x, y, w, h, text, bg, color, large) {
-    const hover = pointInRect(game.mouse.x, game.mouse.y, x, y, w, h);
-    ctx.save();
-    ctx.fillStyle = hover ? lighten(bg, 18) : bg;
-    roundRect(x, y, w, h, 14, true, false);
-    ctx.strokeStyle = hover ? '#fff3a8' : 'rgba(255,255,255,0.28)';
-    ctx.lineWidth = hover ? 4 : 2;
-    roundRect(x, y, w, h, 14, false, true);
-    ctx.fillStyle = color;
-    ctx.font = 'bold ' + (large ? 31 : 17) + 'px "Microsoft YaHei"';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + w / 2, y + h / 2 + 1);
-    ctx.textBaseline = 'alphabetic';
-    ctx.restore();
-  }
-
-  function drawHealthBar(x, y, w, h, hp, maxHp, label, color) {
-    ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    roundRect(x, y, w, h, h / 2, true, false);
-    ctx.fillStyle = color;
-    roundRect(x, y, w * clamp(hp / maxHp, 0, 1), h, h / 2, true, false);
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-    ctx.lineWidth = 1;
-    roundRect(x, y, w, h, h / 2, false, true);
-    if (label) {
-      ctx.fillStyle = '#fff7d7';
-      ctx.font = 'bold 12px "Microsoft YaHei"';
-      ctx.textAlign = 'center';
-      ctx.fillText(label, x + w / 2, y + h - 2);
-    }
-    ctx.restore();
-  }
-
-  function drawPixelText(text, x, y, size, color, align) {
-    ctx.save();
-    ctx.font = '900 ' + size + 'px "Microsoft YaHei", system-ui, sans-serif';
-    ctx.textAlign = align || 'left';
-    ctx.lineWidth = Math.max(3, size / 10);
-    ctx.strokeStyle = 'rgba(0,0,0,0.78)';
-    ctx.strokeText(text, x, y);
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y);
-    ctx.restore();
-  }
-
-  function wrapText(text, x, y, maxWidth, lineHeight) {
-    const chars = String(text).split('');
-    let line = '';
-    for (const ch of chars) {
-      const test = line + ch;
-      if (ctx.measureText(test).width > maxWidth && line.length > 0) {
-        ctx.fillText(line, x, y);
-        line = ch;
-        y += lineHeight;
-      } else {
-        line = test;
-      }
-    }
-    if (line) ctx.fillText(line, x, y);
-  }
-
-  function addSlash(x, y) {
-    for (let i = 0; i < 4; i++) addParticle(x + rand(-12, 12), y + rand(-12, 12), rand(-40, 40), rand(-50, 20), '#f2f2f2', 0.22, 2);
-  }
-
-  function burstZombie(x, y, mode = 'normal') {
-    const count = mode === 'ultimate' ? 46 : 20;
-    const c1 = mode === 'ultimate' ? '#ff5a5a' : (mode === 'reaper' ? '#b58cff' : '#5fbf75');
-    const c2 = mode === 'ultimate' ? '#ffd36b' : (mode === 'reaper' ? '#2d214d' : '#2d6f7e');
-    for (let i = 0; i < count; i++) addParticle(x + rand(-20, 20), y + rand(-45, 28), rand(-95, 95), rand(-110, 50), i % 2 ? c1 : c2, 0.85, rand(2, 6));
-  }
-
-  function addParticle(x, y, vx, vy, color, life, size) {
-    game.particles.push({ x, y, vx, vy, color, life, maxLife: life, size });
-  }
-
-  function updateParticles(dt) {
-    for (const p of game.particles) {
-      p.life -= dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 70 * dt;
-    }
-    game.particles = game.particles.filter(p => p.life > 0);
-  }
-
-  function drawParticles() {
-    ctx.save();
-    for (const p of game.particles) {
-      ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1);
-      ctx.fillStyle = p.color;
-      ctx.fillRect(p.x, p.y, p.size, p.size);
-    }
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
-
-  function showFloat(text, x, y, color) {
-    game.floatTexts.push({ text, x, y, vy: -34, life: 1.35, maxLife: 1.35, color });
-  }
-
-  function updateFloatTexts(dt) {
-    for (const f of game.floatTexts) {
-      f.life -= dt;
-      f.y += f.vy * dt;
-    }
-    game.floatTexts = game.floatTexts.filter(f => f.life > 0);
-  }
-
-  function drawFloatTexts() {
-    ctx.save();
-    ctx.font = 'bold 16px "Microsoft YaHei"';
-    ctx.textAlign = 'center';
-    for (const f of game.floatTexts) {
-      ctx.globalAlpha = clamp(f.life / f.maxLife, 0, 1);
-      ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-      ctx.lineWidth = 3;
-      ctx.strokeText(f.text, f.x, f.y);
-      ctx.fillStyle = f.color;
-      ctx.fillText(f.text, f.x, f.y);
-    }
-    ctx.restore();
-    ctx.globalAlpha = 1;
-  }
-
-  function formatTime(seconds) {
-    const s = Math.max(0, Math.ceil(seconds));
-    const m = Math.floor(s / 60);
-    const r = String(s % 60).padStart(2, '0');
-    return m + ':' + r;
-  }
-
-  function isZombieImmuneToElement(z, kind) {
-    if (!z || !z.immuneElements || !kind) return false;
-    return z.immuneElements.includes(kind);
-  }
-
-  function elementColor(kind) {
-    switch (kind) {
-      case '雷射': return '#f7f27a';
-      case '火焰': return '#ff8a3d';
-      case '寒冰': return '#8ad8ff';
-      case '草地': return '#79d66b';
-      default: return '#f0e1a1';
-    }
-  }
-
-  function lighten(hex, amount) {
-    const c = hex.replace('#', '');
-    const num = parseInt(c, 16);
-    let r = (num >> 16) + amount;
-    let g = ((num >> 8) & 0xff) + amount;
-    let b = (num & 0xff) + amount;
-    r = clamp(Math.round(r), 0, 255);
-    g = clamp(Math.round(g), 0, 255);
-    b = clamp(Math.round(b), 0, 255);
-    return '#' + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
-  }
-
-  function roundRect(x, y, w, h, r, fill, stroke) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
-  }
-
-  function pointInRect(px, py, x, y, w, h) {
-    return px >= x && px <= x + w && py >= y && py <= y + h;
-  }
-
-  function circleRectOverlap(cx, cy, r, rx, ry, rw, rh) {
-    const closestX = clamp(cx, rx, rx + rw);
-    const closestY = clamp(cy, ry, ry + rh);
-    return dist(cx, cy, closestX, closestY) <= r;
-  }
-
-  function dist(x1, y1, x2, y2) {
-    return Math.hypot(x2 - x1, y2 - y1);
-  }
-
-  function clamp(v, min, max) {
-    return Math.max(min, Math.min(max, v));
-  }
-
-  function lerp(a, b, t) {
-    return a + (b - a) * t;
-  }
-
-  function rand(min, max) {
-    return Math.random() * (max - min) + min;
-  }
-
-  function loop(now) {
-    const dt = Math.min(0.033, (now - game.last) / 1000 || 0);
-    game.last = now;
-    update(dt);
-    render();
-    requestAnimationFrame(loop);
-  }
-
-  requestAnimationFrame(loop);
+  resize();
+  draw();
+  updateHud();
 })();
 </script>
 </body>
 </html>
+
+
